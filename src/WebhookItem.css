@@ -1,0 +1,32 @@
+@import 'part:@sanity/base/theme/variables-style';
+@import 'part:@sanity/base/theme/variables/code-style';
+
+.hook {
+	display: flex;
+	align-items: center;
+	padding: 2rem;
+}
+
+.hook:not(:first-child) {
+	border-top: 1px solid var(--hairline-color);
+}
+
+.hookDetails {
+	margin-right: auto;
+	padding-right: 1em;
+}
+
+.hookTitle {
+	composes: heading5 from 'part:@sanity/base/theme/typography/headings-style';
+	margin-top: 0;
+	padding-top: 0;
+}
+
+.hookURL {
+	margin: 0;
+	color: var(--code-color);
+  line-height: 17px;
+  font-size: 13px;
+  font-family: var(--font-family-monospace);
+  white-space: pre-wrap;
+}
