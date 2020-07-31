@@ -11,7 +11,7 @@ import AnchorButton from 'part:@sanity/components/buttons/anchor'
 import styles from './WebhookDeploy.css'
 
 const WEBHOOK_TYPE = 'webhook_deploy'
-const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"]`
+const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
 
 export default class Deploy extends React.Component {
   constructor(props) {
@@ -24,7 +24,7 @@ export default class Deploy extends React.Component {
       openDialog: false,
       pendingWebhookTitle: '',
       pendingWebhookURL: '',
-      pendingWebhookStatus: '',
+      pendingVercelToken: '',
       snackbar: {
         active: false,
         kind: '',
@@ -41,11 +41,26 @@ export default class Deploy extends React.Component {
     // Listen to new stuff
     this.webhookSubscription = client
       .listen(WEBHOOK_QUERY, {}, { includeResult: true })
-      .subscribe((result) => {
-        // TODO: find a better way to do this.
-        setTimeout(() => {
-          this.fetchAllWebhooks()
-        }, 1000)
+      .subscribe((res) => {
+        const wasCreated = res.mutations.some((item) =>
+          item.hasOwnProperty('create')
+        )
+        const wasDeleted = res.mutations.some((item) =>
+          item.hasOwnProperty('delete')
+        )
+        if (wasCreated) {
+          this.setState({
+            webhooks: [...this.state.webhooks, res.result],
+          })
+        }
+        if (wasDeleted) {
+          const newHooks = this.state.webhooks.filter(
+            (hook) => hook._id !== res.documentId
+          )
+          this.setState({
+            webhooks: newHooks,
+          })
+        }
       })
   }
 
@@ -71,15 +86,21 @@ export default class Deploy extends React.Component {
         _type: WEBHOOK_TYPE,
         name: this.state.pendingWebhookTitle,
         url: this.state.pendingWebhookURL,
-        status: this.state.pendingWebhookStatus,
+        vercelToken: this.state.pendingVercelToken,
       })
       .then(() => {
         this.setState({
           pendingWebhookTitle: '',
           pendingWebhookURL: '',
-          pendingWebhookStatus: '',
+          pendingVercelToken: '',
           openDialog: false,
         })
+        this.toggleSnackbar(
+          true,
+          'success',
+          'Success!',
+          `Created webhook: ${name}`
+        )
       })
   }
 
@@ -123,6 +144,7 @@ export default class Deploy extends React.Component {
         name={hook.name}
         url={hook.url}
         id={hook._id}
+        vercelToken={hook.vercelToken}
         toggleSnackbar={this.toggleSnackbar}
       />
     ))
@@ -184,28 +206,17 @@ export default class Deploy extends React.Component {
                       }
                       value={this.state.pendingWebhookURL}
                     />
-                  </div>
-                  {/* <DefaultTextField
-                    label="Status Badge"
-                    onChange={(event) =>
-                      this.setFormValue(
-                        'pendingWebhookStatus',
-                        event.target.value
-                      )
-                    }
-                    value={this.state.pendingWebhookStatus}
-                  /> */}
-                  {/* <div className={styles.submitContainer}>
-                    <DefaultButton
-                      disabled={
-                        !this.state.pendingWebhookTitle ||
-                        !this.state.pendingWebhookURL
+                    <DefaultTextField
+                      label="Vercel Token"
+                      onChange={(event) =>
+                        this.setFormValue(
+                          'pendingVercelToken',
+                          event.target.value
+                        )
                       }
-                      type="submit"
-                    >
-                      Create New Webhook
-                    </DefaultButton>
-                  </div> */}
+                      value={this.state.pendingVercelToken}
+                    />
+                  </div>
                 </form>
               </DialogContent>
             </div>
@@ -214,7 +225,9 @@ export default class Deploy extends React.Component {
       </>
     )
 
-    const emptyState = !this.state.webhooks.length && <p>No webhooks yet.</p>
+    const emptyState = !this.state.webhooks.length && (
+      <p className={styles.emptyList}>No webhooks yet.</p>
+    )
 
     return (
       <div className={styles.appContainer}>

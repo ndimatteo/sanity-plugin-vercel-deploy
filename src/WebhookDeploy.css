@@ -31,6 +31,10 @@
   } */
 }
 
+.emptyList {
+	margin: 1rem;
+}
+
 .footer {
   composes: footer from 'part:@sanity/dashboard/widget-styles';
 	border-top: 1px solid var(--hairline-color);
