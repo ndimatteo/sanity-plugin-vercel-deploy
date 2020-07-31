@@ -6,33 +6,58 @@ import client from 'part:@sanity/base/client'
 import Button from 'part:@sanity/components/buttons/default'
 import styles from './WebhookItem.css'
 
-const webhookItem = ({ name, url, id, vercelToken, toggleSnackbar }) => {
-  const [isUpdating, setUpdating] = useState(vercelToken ? true : false)
+const webhookItem = ({
+  name,
+  url,
+  id,
+  vercelProject,
+  vercelToken,
+  toggleSnackbar,
+}) => {
+  const [isUpdating, setUpdating] = useState(
+    vercelToken && vercelProject ? true : false
+  )
   const [isDeploying, setDeploying] = useState(false)
   const [status, setStatus] = useState(false)
+  const [project, setProject] = useState(false)
 
   useEffect(() => {
     let isSubscribed = true
-    if (vercelToken) {
-      const latest = getLatestDeployment().then((res) => {
-        if (isSubscribed) {
-          const deployment = res.data.deployments[0]
-          setUpdating(false)
-          setStatus(deployment.state)
-          console.log(`INITIAL LOAD STATUS: ${status}`)
-          if (status !== 'READY') {
-            setDeploying(true)
+    if (vercelToken && vercelProject) {
+      // get project ID from project name
+      const id = getProject(vercelProject)
+        .then((res) => {
+          if (res.data.id) {
+            setProject(res.data.id)
           }
-        }
-      })
+        })
+        .catch((err) => {
+          console.log(err)
+          setStatus('ERROR')
+          setUpdating(false)
+        })
+
+      // get latest project deployment
+      if (project) {
+        const latest = getLatestDeployment().then((res) => {
+          if (isSubscribed) {
+            const deployment = res.data.deployments[0]
+            setUpdating(false)
+            setStatus(deployment.state)
+            if (status !== 'READY') {
+              setDeploying(true)
+            }
+          }
+        })
+      }
     }
 
     return () => (isSubscribed = false)
-  }, [])
+  }, [project])
 
   useEffect(() => {
     let isSubscribed = true
-    if (status === 'READY' && isSubscribed && vercelToken) {
+    if (status === 'READY' && isSubscribed && vercelToken && vercelProject) {
       setDeploying(false)
     }
 
@@ -46,7 +71,20 @@ const webhookItem = ({ name, url, id, vercelToken, toggleSnackbar }) => {
         'content-type': 'application/json',
         Authorization: `Bearer ${vercelToken}`,
       },
-      url: 'https://api.vercel.com/v5/now/deployments?limit=1',
+      url: `https://api.vercel.com/v5/now/deployments?projectId=${project}&limit=1`,
+    }
+
+    return axios(options)
+  }
+
+  const getProject = (id) => {
+    const options = {
+      method: 'GET',
+      headers: {
+        'content-type': 'application/json',
+        Authorization: `Bearer ${vercelToken}`,
+      },
+      url: `https://api.vercel.com/v1/projects/${id}`,
     }
 
     return axios(options)
@@ -56,8 +94,6 @@ const webhookItem = ({ name, url, id, vercelToken, toggleSnackbar }) => {
     setDeploying(true)
     setStatus('INITIATED')
     toggleSnackbar(false)
-
-    console.log('onDeploy')
 
     global
       .fetch(url, {
@@ -94,7 +130,7 @@ const webhookItem = ({ name, url, id, vercelToken, toggleSnackbar }) => {
           <p className={styles.hookURL}>{url}</p>
         </div>
         <div className={styles.hookActions}>
-          {vercelToken && (
+          {vercelToken && vercelProject && (
             <div className={styles.hookStatus}>
               {isDeploying ? (
                 <ReactPolling

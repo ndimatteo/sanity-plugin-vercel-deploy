@@ -24,6 +24,7 @@ export default class Deploy extends React.Component {
       openDialog: false,
       pendingWebhookTitle: '',
       pendingWebhookURL: '',
+      pendingVercelProject: '',
       pendingVercelToken: '',
       snackbar: {
         active: false,
@@ -86,12 +87,14 @@ export default class Deploy extends React.Component {
         _type: WEBHOOK_TYPE,
         name: this.state.pendingWebhookTitle,
         url: this.state.pendingWebhookURL,
+        vercelProject: this.state.pendingVercelProject,
         vercelToken: this.state.pendingVercelToken,
       })
       .then(() => {
         this.setState({
           pendingWebhookTitle: '',
           pendingWebhookURL: '',
+          pendingVercelProject: '',
           pendingVercelToken: '',
           openDialog: false,
         })
@@ -144,6 +147,7 @@ export default class Deploy extends React.Component {
         name={hook.name}
         url={hook.url}
         id={hook._id}
+        vercelProject={hook.vercelProject}
         vercelToken={hook.vercelToken}
         toggleSnackbar={this.toggleSnackbar}
       />
@@ -205,6 +209,16 @@ export default class Deploy extends React.Component {
                         )
                       }
                       value={this.state.pendingWebhookURL}
+                    />
+                    <DefaultTextField
+                      label="Vercel Project Name"
+                      onChange={(event) =>
+                        this.setFormValue(
+                          'pendingVercelProject',
+                          event.target.value
+                        )
+                      }
+                      value={this.state.pendingVercelProject}
                     />
                     <DefaultTextField
                       label="Vercel Token"
