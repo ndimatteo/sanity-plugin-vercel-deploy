@@ -83,29 +83,6 @@ export default class Deploy extends React.Component {
       })
   }
 
-  // onDeploy = (name, url) => {
-  //   global
-  //     .fetch(url, {
-  //       method: 'POST',
-  //     })
-  //     .then((res) => {
-  //       console.log('POST:')
-  //       console.log(res)
-  //       alert(`Deployed: ${name}!`)
-  //     })
-  // }
-
-  // onRemove = (name, _id) => {
-  // 	this.setState({
-  // 		isUpdating: true
-  // 	})
-  //   client.delete(_id).then((res) => {
-  // 		this.setState({
-  // 			isUpdating: false
-  // 		})
-  //   })
-  // }
-
   toggleDialog = (state) => {
     this.setState({
       openDialog: state,
