@@ -44,7 +44,7 @@ const webhookItem = ({
             const deployment = res.data.deployments[0]
             setUpdating(false)
             setStatus(deployment.state)
-            if (status !== 'READY') {
+            if (status !== 'READY' || status !== 'ERROR') {
               setDeploying(true)
             }
           }
@@ -57,7 +57,12 @@ const webhookItem = ({
 
   useEffect(() => {
     let isSubscribed = true
-    if (status === 'READY' && isSubscribed && vercelToken && vercelProject) {
+    if (
+      (status === 'READY' || status === 'ERROR') &&
+      isSubscribed &&
+      vercelToken &&
+      vercelProject
+    ) {
       setDeploying(false)
     }
 
