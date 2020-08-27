@@ -39,13 +39,18 @@
 	flex-shrink: 0;
 }
 
+.deployButton,
+.deleteButton {
+	margin-left: 0.5em;
+}
+
 .hookStatus {
 	display: block;
 	position: relative;
 }
 
 .hookStatusIndicator {
-	margin-right: 1.5em;
+	margin-right: 1em;
 	padding-left: 1.25em;
 }
 

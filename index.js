@@ -5,7 +5,7 @@ import WebhookDeploy from './src/WebhookDeploy'
 
 const deployIcon = () => {
   return (
-    <IconContext.Provider value={{ style: { strokeWidth: 1 } }}>
+    <IconContext.Provider value={{ style: { strokeWidth: 1.75 } }}>
       <FiUploadCloud />
     </IconContext.Provider>
   )
