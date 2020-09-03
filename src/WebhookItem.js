@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import ReactPolling from 'react-polling'
 
@@ -21,6 +21,9 @@ const webhookItem = ({
   const [status, setStatus] = useState(false)
   const [project, setProject] = useState(false)
 
+  const statusRef = useRef()
+  statusRef.current = false
+
   useEffect(() => {
     let isSubscribed = true
     if (vercelToken && vercelProject) {
@@ -33,7 +36,9 @@ const webhookItem = ({
         })
         .catch((err) => {
           console.log(err)
+
           setStatus('ERROR')
+          statusRef.current = 'ERROR'
           setUpdating(false)
         })
 
@@ -42,8 +47,10 @@ const webhookItem = ({
         const latest = getLatestDeployment().then((res) => {
           if (isSubscribed) {
             const deployment = res.data.deployments[0]
+
             setUpdating(false)
             setStatus(deployment.state)
+
             if (status !== 'READY' || status !== 'ERROR') {
               setDeploying(true)
             }
@@ -69,7 +76,7 @@ const webhookItem = ({
     return () => (isSubscribed = false)
   }, [status])
 
-  const getLatestDeployment = () => {
+  const getLatestDeployment = async () => {
     const options = {
       method: 'GET',
       headers: {
@@ -98,6 +105,7 @@ const webhookItem = ({
   const onDeploy = (name, url) => {
     setDeploying(true)
     setStatus('INITIATED')
+
     toggleSnackbar(false)
 
     global
@@ -142,18 +150,21 @@ const webhookItem = ({
                   url={'custom'}
                   method={'GET'}
                   interval={3000}
-                  retryCount={2}
+                  retryCount={5}
                   onSuccess={(res) => {
                     const deployment = res.data.deployments[0]
                     // catch if initial deployment hasn't updated yet
+
                     if (
-                      status === 'INITIATED' &&
+                      statusRef.current === false &&
                       deployment.state === 'READY'
                     ) {
                       return true
                     }
-                    console.log('polling...')
+
                     setStatus(deployment.state)
+                    statusRef.current = deployment.state
+
                     return true
                   }}
                   onFailure={(err) => console.log(err)}
