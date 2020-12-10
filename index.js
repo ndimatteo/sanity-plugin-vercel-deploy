@@ -1,7 +1,7 @@
 import React from 'react'
 import { IconContext } from 'react-icons'
 import { FiUploadCloud } from 'react-icons/fi'
-import WebhookDeploy from './src/WebhookDeploy'
+import WebhookDeploy from './src/webhook-deploy'
 
 const deployIcon = () => {
   return (
@@ -15,5 +15,5 @@ export default {
   title: 'Deploy',
   name: 'webhookDeploy',
   icon: deployIcon,
-  component: WebhookDeploy,
+  component: WebhookDeploy
 }

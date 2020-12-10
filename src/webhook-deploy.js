@@ -1,14 +1,13 @@
 import React from 'react'
 import client from 'part:@sanity/base/client'
-import WebhookItem from './WebhookItem'
+import WebhookItem from './webhook-item'
 
 import Snackbar from 'part:@sanity/components/snackbar/default'
 import DefaultDialog from 'part:@sanity/components/dialogs/default'
-import DialogContent from 'part:@sanity/components/dialogs/content'
-import DefaultTextField from '@sanity/components/lib/textfields/DefaultTextField'
+import DefaultTextField from 'part:@sanity/components/textfields/default'
 import AnchorButton from 'part:@sanity/components/buttons/anchor'
 
-import styles from './WebhookDeploy.css'
+import styles from './webhook-deploy.css'
 
 const WEBHOOK_TYPE = 'webhook_deploy'
 const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
@@ -30,8 +29,8 @@ export default class Deploy extends React.Component {
         active: false,
         kind: '',
         title: '',
-        message: '',
-      },
+        message: ''
+      }
     }
   }
 
@@ -42,24 +41,24 @@ export default class Deploy extends React.Component {
     // Listen to new stuff
     this.webhookSubscription = client
       .listen(WEBHOOK_QUERY, {}, { includeResult: true })
-      .subscribe((res) => {
-        const wasCreated = res.mutations.some((item) =>
+      .subscribe(res => {
+        const wasCreated = res.mutations.some(item =>
           item.hasOwnProperty('create')
         )
-        const wasDeleted = res.mutations.some((item) =>
+        const wasDeleted = res.mutations.some(item =>
           item.hasOwnProperty('delete')
         )
         if (wasCreated) {
           this.setState({
-            webhooks: [...this.state.webhooks, res.result],
+            webhooks: [...this.state.webhooks, res.result]
           })
         }
         if (wasDeleted) {
           const newHooks = this.state.webhooks.filter(
-            (hook) => hook._id !== res.documentId
+            hook => hook._id !== res.documentId
           )
           this.setState({
-            webhooks: newHooks,
+            webhooks: newHooks
           })
         }
       })
@@ -70,14 +69,14 @@ export default class Deploy extends React.Component {
   }
 
   fetchAllWebhooks = () => {
-    client.fetch(WEBHOOK_QUERY).then((webhooks) => {
+    client.fetch(WEBHOOK_QUERY).then(webhooks => {
       this.setState({ webhooks })
     })
   }
 
   setFormValue = (key, value) => {
     this.setState({
-      [key]: value,
+      [key]: value
     })
   }
 
@@ -88,7 +87,7 @@ export default class Deploy extends React.Component {
         name: this.state.pendingWebhookTitle,
         url: this.state.pendingWebhookURL,
         vercelProject: this.state.pendingVercelProject,
-        vercelToken: this.state.pendingVercelToken,
+        vercelToken: this.state.pendingVercelToken
       })
       .then(() => {
         this.setState({
@@ -96,7 +95,7 @@ export default class Deploy extends React.Component {
           pendingWebhookURL: '',
           pendingVercelProject: '',
           pendingVercelToken: '',
-          openDialog: false,
+          openDialog: false
         })
         this.toggleSnackbar(
           true,
@@ -107,9 +106,9 @@ export default class Deploy extends React.Component {
       })
   }
 
-  toggleDialog = (state) => {
+  toggleDialog = state => {
     this.setState({
-      openDialog: state,
+      openDialog: state
     })
   }
 
@@ -118,7 +117,7 @@ export default class Deploy extends React.Component {
       this.onSubmit()
     } else {
       this.setState({
-        openDialog: false,
+        openDialog: false
       })
     }
   }
@@ -129,19 +128,19 @@ export default class Deploy extends React.Component {
         active: state,
         kind: kind,
         title: title,
-        message: message,
-      },
+        message: message
+      }
     })
   }
 
   resetSnackbar = () => {
     this.setState({
-      snackbar: { active: false },
+      snackbar: { active: false }
     })
   }
 
   render() {
-    const webhookList = this.state.webhooks.map((hook) => (
+    const webhookList = this.state.webhooks.map(hook => (
       <WebhookItem
         key={hook._id}
         name={hook.name}
@@ -158,7 +157,7 @@ export default class Deploy extends React.Component {
         key: 'create',
         index: 1,
         title: 'Create',
-        color: 'primary',
+        color: 'primary'
       },
       {
         key: 'cancel',
@@ -166,8 +165,8 @@ export default class Deploy extends React.Component {
         title: 'Cancel',
         color: 'primary',
         kind: 'simple',
-        secondary: true,
-      },
+        secondary: true
+      }
     ]
 
     const webhookForm = (
@@ -176,6 +175,8 @@ export default class Deploy extends React.Component {
           <DefaultDialog
             title="New Webhook"
             color="default"
+            size="medium"
+            padding="large"
             showCloseButton
             onClose={() => this.toggleDialog(false)}
             onAction={this.handleAction}
@@ -185,62 +186,49 @@ export default class Deploy extends React.Component {
                 : [actions[1]]
             }
           >
-            <div>
-              <DialogContent size="medium" padding="large">
-                <form>
-                  <div className={styles.fieldWrapper}>
-                    <DefaultTextField
-                      label="Title"
-                      onChange={(event) =>
-                        this.setFormValue(
-                          'pendingWebhookTitle',
-                          event.target.value
-                        )
-                      }
-                      value={this.state.pendingWebhookTitle}
-                    />
-                    <DefaultTextField
-                      label="URL"
-                      type="url"
-                      onChange={(event) =>
-                        this.setFormValue(
-                          'pendingWebhookURL',
-                          event.target.value
-                        )
-                      }
-                      value={this.state.pendingWebhookURL}
-                    />
-                    <DefaultTextField
-                      label="Vercel Project Name"
-                      onChange={(event) =>
-                        this.setFormValue(
-                          'pendingVercelProject',
-                          event.target.value
-                        )
-                      }
-                      value={this.state.pendingVercelProject}
-                    />
-                    <DefaultTextField
-                      label="Vercel Token"
-                      onChange={(event) =>
-                        this.setFormValue(
-                          'pendingVercelToken',
-                          event.target.value
-                        )
-                      }
-                      value={this.state.pendingVercelToken}
-                    />
-                  </div>
-                </form>
-              </DialogContent>
-            </div>
+            <form>
+              <div className={styles.fieldWrapper}>
+                <DefaultTextField
+                  label="Title"
+                  onChange={event =>
+                    this.setFormValue('pendingWebhookTitle', event.target.value)
+                  }
+                  value={this.state.pendingWebhookTitle}
+                />
+                <DefaultTextField
+                  label="URL"
+                  type="url"
+                  onChange={event =>
+                    this.setFormValue('pendingWebhookURL', event.target.value)
+                  }
+                  value={this.state.pendingWebhookURL}
+                />
+                <DefaultTextField
+                  label="Vercel Project Name"
+                  onChange={event =>
+                    this.setFormValue(
+                      'pendingVercelProject',
+                      event.target.value
+                    )
+                  }
+                  value={this.state.pendingVercelProject}
+                />
+                <DefaultTextField
+                  label="Vercel Token"
+                  onChange={event =>
+                    this.setFormValue('pendingVercelToken', event.target.value)
+                  }
+                  value={this.state.pendingVercelToken}
+                />
+              </div>
+            </form>
           </DefaultDialog>
         )}
       </>
     )
 
     const emptyState = !this.state.webhooks.length && (
-      <p className={styles.emptyList}>No webhooks yet.</p>
+      <p className={styles.emptyList}>No webhooks created yet.</p>
     )
 
     return (
