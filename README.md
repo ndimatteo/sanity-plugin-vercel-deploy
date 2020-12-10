@@ -1,5 +1,12 @@
-# Vercel Deployment for Sanity
-Trigger Vercel Deploy Hooks from your Sanity Studio.
+<h3 align="center">
+  Vercel Deployment for Sanity
+</h3>
+<p align="center">
+  <strong>Trigger Vercel Deploy Hooks from your Sanity Studio.</strong><br />
+✨ LIVE status updates ✨ multiple deployments ✨ active polling ✨
+</p>
+
+![vercel-deploy](https://user-images.githubusercontent.com/737188/101732948-047c0080-3a8c-11eb-9c07-777cfe10fa82.gif)
 
 ## Install
 
@@ -9,3 +16,32 @@ Run the following command in your studio folder using the Sanity CLI:
 sanity install vercel-deploy
 ```
 
+## Your first Vercel Deployment
+Once installed, you should see a new "Deploy" tool in your Sanity Studio navbar.
+
+Create a new deployment by clicking `Create New`:
+
+![vercel-create-deploy](https://user-images.githubusercontent.com/737188/101733617-275ae480-3a8d-11eb-9ce7-3e091be62779.png)
+
+Next, you'll be prompted to add the following:
+
+> **`Title`**<br />
+> A name for your deployment. This can be whatever you want, to help you organize your deployments. Typically, this should be the environment you are deploying to, like `Production` or `Staging`
+
+> **`Vercel Project Name`**<br />
+> This is the actual Project Name listed in your Vercel account. Navigate to your Project Settings within Vercel to find your Project Name.
+
+> **`Deploy Hook URL`**<br />
+> This is the Vercel Deploy hook you want to trigger. You can set these up within your Vercel Project, under Settings -> Git and scroll down to the "Deploy Hooks" section. Create your desired hook (ie. "Production Deploy" on `master` branch)
+
+> **`Vercel Token`**<br />
+> This is a token from your Vercel Account (not project). Navigate to your Account Settings, and go to "Tokens". Create a new Token, giving it a recognizable name for what it's being used for, like "Sanity Deploy". A Token will be generated for you to copy **once**.
+
+😎 Once you've created your deployment you can now trigger deploys at anytime!
+
+## License
+
+### MIT
+> [nickdimatteo.com](https://nickdimatteo.com) &nbsp;&middot;&nbsp;
+> Github [@ndimatteo](https://github.com/ndimatteo) &nbsp;&middot;&nbsp;
+> Instagram [@ndimatteo](https://instagram.com/ndimatteo)
