@@ -1,2 +1,11 @@
 # Vercel Deployment for Sanity
-Custom plugin to trigger Vercel Deploy Hooks from the Sanity Studio.
+Trigger Vercel Deploy Hooks from your Sanity Studio.
+
+## Install
+
+Run the following command in your studio folder using the Sanity CLI:
+
+```sh
+sanity install content-calendar
+```
+

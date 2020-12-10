@@ -1,7 +1,9 @@
 import React from 'react'
+import { route } from 'part:@sanity/base/router'
 import { IconContext } from 'react-icons'
 import { FiUploadCloud } from 'react-icons/fi'
-import WebhookDeploy from './src/webhook-deploy'
+
+import VercelDeploy from './vercel-deploy'
 
 const deployIcon = () => {
   return (
@@ -13,7 +15,8 @@ const deployIcon = () => {
 
 export default {
   title: 'Deploy',
-  name: 'webhookDeploy',
+  name: 'vercelDeploy',
+  router: route('/vercel-deploy'),
   icon: deployIcon,
-  component: WebhookDeploy
+  component: VercelDeploy
 }

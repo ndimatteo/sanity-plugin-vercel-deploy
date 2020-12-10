@@ -1,0 +1,50 @@
+{
+  "name": "sanity-plugin-vercel-deploy",
+  "version": "1.0.0",
+  "description": "Trigger Vercel Deploy Hooks from your Sanity Studio.",
+  "keywords": [
+    "sanity",
+    "plugin",
+    "vercel",
+    "deploy",
+    "webhook"
+  ],
+  "author": "Nick DiMatteo <hello@nickdimatteo.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ndimatteo/sanity-plugin-vercel-deploy/issues"
+  },
+  "homepage": "https://github.com/ndimatteo/sanity-plugin-vercel-deploy#readme",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "babel src -d dist --copy-files",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "npm run build"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.6.2",
+    "react-icons": "^3.11.0",
+    "react-polling": "^1.0.9",
+    "axios": "^0.20.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.6.3",
+    "@babel/core": "^7.6.3",
+    "@babel/plugin-proposal-class-properties": "^7.1.0",
+    "@babel/plugin-transform-runtime": "^7.6.2",
+    "@babel/preset-env": "^7.0.0",
+    "@babel/preset-react": "^7.0.0"
+  },
+  "peerDependencies": {
+    "@sanity/base": "^2.1.1",
+    "@sanity/components": "^2.1.0",
+    "@sanity/dashboard": "^2.1.0",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0"
+  },
+  "sanityTemplate": {
+    "suggestedName": "vercel-deploy",
+    "requiresConfig": false,
+    "minimumBaseVersion": "2.1.0"
+  }
+}

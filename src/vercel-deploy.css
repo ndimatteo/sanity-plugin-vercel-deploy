@@ -18,6 +18,14 @@
   composes: title from 'part:@sanity/dashboard/widget-styles';
 }
 
+.titleIcon {
+  top: 0.125em;
+  position: relative;
+  margin: -.25em .25em -.25em -.25em;
+  width: 1.5em;
+  height: 1.5em;
+}
+
 .list {
 	composes: content from 'part:@sanity/dashboard/widget-styles';
 	padding: 0;
@@ -32,7 +40,19 @@
 }
 
 .emptyList {
-	margin: 1rem;
+	margin: 1rem 4rem 4rem;
+  text-align: center;
+}
+
+.emptyHelpLink {
+  color: var(--gray-lighter);
+  text-decoration: none;
+}
+
+.emptyIcon {
+  display: block;
+  margin: 4rem auto 0;
+  width: 8rem;
 }
 
 .footer {

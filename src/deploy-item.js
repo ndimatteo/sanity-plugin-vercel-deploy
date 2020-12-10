@@ -4,9 +4,10 @@ import ReactPolling from 'react-polling'
 
 import client from 'part:@sanity/base/client'
 import Button from 'part:@sanity/components/buttons/default'
-import styles from './webhook-item.css'
+import DefaultBadge from 'part:@sanity/components/badges/default'
+import styles from './deploy-item.css'
 
-const webhookItem = ({
+const deployItem = ({
   name,
   url,
   id,
@@ -14,9 +15,7 @@ const webhookItem = ({
   vercelToken,
   toggleSnackbar
 }) => {
-  const [isUpdating, setUpdating] = useState(
-    vercelToken && vercelProject ? true : false
-  )
+  const [isUpdating, setUpdating] = useState(vercelToken && vercelProject)
   const [isDeploying, setDeploying] = useState(false)
   const [status, setStatus] = useState(false)
   const [project, setProject] = useState(false)
@@ -139,7 +138,10 @@ const webhookItem = ({
     <>
       <div className={styles.hook}>
         <div className={styles.hookDetails}>
-          <h4 className={styles.hookTitle}>{name}</h4>
+          <h4 className={styles.hookTitle}>
+            {`${name} `}
+            <DefaultBadge color="black">{vercelProject}</DefaultBadge>
+          </h4>
           <p className={styles.hookURL}>{url}</p>
         </div>
         <div className={styles.hookActions}>
@@ -260,4 +262,4 @@ const titleCase = str => {
     .join(' ')
 }
 
-export default webhookItem
+export default deployItem

@@ -1,13 +1,16 @@
 import React from 'react'
 import client from 'part:@sanity/base/client'
-import WebhookItem from './webhook-item'
+import WebhookItem from './deploy-item'
 
 import Snackbar from 'part:@sanity/components/snackbar/default'
 import DefaultDialog from 'part:@sanity/components/dialogs/default'
 import DefaultTextField from 'part:@sanity/components/textfields/default'
 import AnchorButton from 'part:@sanity/components/buttons/anchor'
 
-import styles from './webhook-deploy.css'
+import WarningIcon from 'part:@sanity/base/warning-icon'
+import Alert from 'part:@sanity/components/alerts/alert'
+
+import styles from './vercel-deploy.css'
 
 const WEBHOOK_TYPE = 'webhook_deploy'
 const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
@@ -173,7 +176,7 @@ export default class Deploy extends React.Component {
       <>
         {this.state.openDialog && (
           <DefaultDialog
-            title="New Webhook"
+            title="New Deployment"
             color="default"
             size="medium"
             padding="large"
@@ -190,21 +193,15 @@ export default class Deploy extends React.Component {
               <div className={styles.fieldWrapper}>
                 <DefaultTextField
                   label="Title"
+                  description="Give your deploy a name, like 'Production'"
                   onChange={event =>
                     this.setFormValue('pendingWebhookTitle', event.target.value)
                   }
                   value={this.state.pendingWebhookTitle}
                 />
                 <DefaultTextField
-                  label="URL"
-                  type="url"
-                  onChange={event =>
-                    this.setFormValue('pendingWebhookURL', event.target.value)
-                  }
-                  value={this.state.pendingWebhookURL}
-                />
-                <DefaultTextField
                   label="Vercel Project Name"
+                  description="The exact name of the associated project on Vercel"
                   onChange={event =>
                     this.setFormValue(
                       'pendingVercelProject',
@@ -214,12 +211,27 @@ export default class Deploy extends React.Component {
                   value={this.state.pendingVercelProject}
                 />
                 <DefaultTextField
+                  label="Deploy Hook URL"
+                  description="The Vercel deploy hook URL from your project's Git settings"
+                  type="url"
+                  onChange={event =>
+                    this.setFormValue('pendingWebhookURL', event.target.value)
+                  }
+                  value={this.state.pendingWebhookURL}
+                />
+                <DefaultTextField
                   label="Vercel Token"
+                  description="A Vercel token from your account settings"
                   onChange={event =>
                     this.setFormValue('pendingVercelToken', event.target.value)
                   }
                   value={this.state.pendingVercelToken}
                 />
+
+                <Alert color="warning" icon={WarningIcon} title="Careful!">
+                  Once you create this deployment you will not be able to edit
+                  it.
+                </Alert>
               </div>
             </form>
           </DefaultDialog>
@@ -228,14 +240,86 @@ export default class Deploy extends React.Component {
     )
 
     const emptyState = !this.state.webhooks.length && (
-      <p className={styles.emptyList}>No webhooks created yet.</p>
+      <>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          width="360"
+          viewBox="0 0 260 235"
+          className={styles.emptyIcon}
+        >
+          <path
+            fill="white"
+            fillRule="evenodd"
+            stroke="black"
+            strokeDasharray="4 4"
+            strokeWidth="2"
+            d="M107.36 2.48l105.7 185.47H2.66L108.35 2.48z"
+            clipRule="evenodd"
+          />
+          <ellipse cx="182.68" cy="156.48" fill="white" rx="74.32" ry="74.52" />
+          <path
+            stroke="black"
+            strokeWidth="2"
+            d="M256.5 156.48c0 40.88-33.05 74.02-73.82 74.02-40.77 0-73.83-33.14-73.83-74.02 0-40.87 33.06-74.01 73.83-74.01 40.77 0 73.82 33.14 73.82 74.01z"
+          />
+
+          <mask
+            id="a"
+            width="149"
+            height="150"
+            x="108"
+            y="81"
+            maskUnits="userSpaceOnUse"
+          >
+            <ellipse
+              cx="182.68"
+              cy="156.48"
+              fill="#fff"
+              rx="74.32"
+              ry="74.52"
+            />
+          </mask>
+          <g mask="url(#a)">
+            <path
+              fill="black"
+              fillRule="evenodd"
+              d="M108.36 2.48l105.7 185.47H2.66L108.35 2.48z"
+              clipRule="evenodd"
+            />
+          </g>
+        </svg>
+        <p className={styles.emptyList}>
+          No deploys created yet.{' '}
+          <a
+            className={styles.emptyHelpLink}
+            href="https://github.com/ndimatteo/sanity-vercel-deploy/blob/master/README.md"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Need help?
+          </a>
+        </p>
+      </>
     )
 
     return (
       <div className={styles.appContainer}>
         <div className={styles.container}>
           <div className={styles.header}>
-            <h2 className={styles.title}>Webhooks</h2>
+            <h2 className={styles.title}>
+              <svg
+                fill="currentColor"
+                viewBox="0 0 512 512"
+                height="1em"
+                width="1em"
+                xmlns="http://www.w3.org/2000/svg"
+                className={styles.titleIcon}
+              >
+                <path d="M256 48l240 416H16z" />
+              </svg>{' '}
+              Vercel Deployments
+            </h2>
           </div>
           <div className={styles.list}>
             {webhookList}
@@ -248,7 +332,7 @@ export default class Deploy extends React.Component {
               color="primary"
               kind="simple"
             >
-              Create Webhook
+              Create New
             </AnchorButton>
           </div>
         </div>
