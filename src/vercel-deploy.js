@@ -6,6 +6,8 @@ import Snackbar from 'part:@sanity/components/snackbar/default'
 import DefaultDialog from 'part:@sanity/components/dialogs/default'
 import DefaultTextField from 'part:@sanity/components/textfields/default'
 import AnchorButton from 'part:@sanity/components/buttons/anchor'
+
+import WarningIcon from 'part:@sanity/base/warning-icon'
 import Alert from 'part:@sanity/components/alerts/alert'
 
 import styles from './vercel-deploy.css'
@@ -226,7 +228,7 @@ export default class Deploy extends React.Component {
                   value={this.state.pendingVercelToken}
                 />
 
-                <Alert color="warning" title="Careful!">
+                <Alert color="warning" icon={WarningIcon} title="Careful!">
                   Once you create this deployment you will not be able to edit
                   it.
                 </Alert>
