@@ -27,7 +27,7 @@ const deployItem = ({
     let isSubscribed = true
     if (vercelToken && vercelProject) {
       // get project ID from project name
-      const id = getProject(vercelProject)
+      getProject(vercelProject)
         .then(res => {
           if (res.data.id) {
             setProject(res.data.id)
@@ -43,7 +43,7 @@ const deployItem = ({
 
       // get latest project deployment
       if (project) {
-        const latest = getLatestDeployment().then(res => {
+        getLatestDeployment().then(res => {
           if (isSubscribed) {
             const deployment = res.data.deployments[0]
 
@@ -149,8 +149,8 @@ const deployItem = ({
             <div className={styles.hookStatus}>
               {isDeploying ? (
                 <ReactPolling
-                  url={'custom'}
-                  method={'GET'}
+                  url="custom"
+                  method="GET"
                   interval={3000}
                   retryCount={5}
                   onSuccess={res => {
@@ -256,7 +256,7 @@ const titleCase = str => {
   return str
     .toLowerCase()
     .split(' ')
-    .map(function(word) {
+    .map(word => {
       return word.charAt(0).toUpperCase() + word.slice(1)
     })
     .join(' ')

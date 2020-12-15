@@ -2,6 +2,7 @@ import React from 'react'
 import client from 'part:@sanity/base/client'
 import WebhookItem from './deploy-item'
 
+import Spinner from 'part:@sanity/components/loading/spinner'
 import Snackbar from 'part:@sanity/components/snackbar/default'
 import DefaultDialog from 'part:@sanity/components/dialogs/default'
 import DefaultTextField from 'part:@sanity/components/textfields/default'
@@ -21,6 +22,7 @@ export default class Deploy extends React.Component {
 
     this.state = {
       webhooks: [],
+      isLoading: true,
       isUpdating: false,
       isDeploying: false,
       openDialog: false,
@@ -46,10 +48,10 @@ export default class Deploy extends React.Component {
       .listen(WEBHOOK_QUERY, {}, { includeResult: true })
       .subscribe(res => {
         const wasCreated = res.mutations.some(item =>
-          item.hasOwnProperty('create')
+          Object.prototype.hasOwnProperty.call(item, 'create')
         )
         const wasDeleted = res.mutations.some(item =>
-          item.hasOwnProperty('delete')
+          Object.prototype.hasOwnProperty.call(item, 'delete')
         )
         if (wasCreated) {
           this.setState({
@@ -73,7 +75,7 @@ export default class Deploy extends React.Component {
 
   fetchAllWebhooks = () => {
     client.fetch(WEBHOOK_QUERY).then(webhooks => {
-      this.setState({ webhooks })
+      this.setState({ webhooks: webhooks, isLoading: false })
     })
   }
 
@@ -93,6 +95,12 @@ export default class Deploy extends React.Component {
         vercelToken: this.state.pendingVercelToken
       })
       .then(() => {
+        this.toggleSnackbar(
+          true,
+          'success',
+          'Success!',
+          `Created webhook: ${this.state.pendingWebhookTitle}`
+        )
         this.setState({
           pendingWebhookTitle: '',
           pendingWebhookURL: '',
@@ -100,12 +108,6 @@ export default class Deploy extends React.Component {
           pendingVercelToken: '',
           openDialog: false
         })
-        this.toggleSnackbar(
-          true,
-          'success',
-          'Success!',
-          `Created webhook: ${name}`
-        )
       })
   }
 
@@ -322,8 +324,16 @@ export default class Deploy extends React.Component {
             </h2>
           </div>
           <div className={styles.list}>
-            {webhookList}
-            {emptyState}
+            {this.state.isLoading ? (
+              <div className={styles.loader}>
+                <Spinner center message="loading deployments..." />
+              </div>
+            ) : (
+              <>
+                {webhookList}
+                {emptyState}
+              </>
+            )}
           </div>
           <div className={styles.footer}>
             <AnchorButton
