@@ -88,6 +88,9 @@ export default class Deploy extends React.Component {
   onSubmit = () => {
     client
       .create({
+        // Explicitly define an _id inside the vercel-deploy path to make sure it's not publicly accessible
+        // This will protect users' tokens & project info. Read nmore: https://www.sanity.io/docs/ids
+        _id: `vercel-deploy.${Math.random().toString().replace('.', '')}`,
         _type: WEBHOOK_TYPE,
         name: this.state.pendingWebhookTitle,
         url: this.state.pendingWebhookURL,
