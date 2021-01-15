@@ -24,6 +24,7 @@
   "dependencies": {
     "@babel/runtime": "^7.6.2",
     "axios": "^0.21.0",
+    "nanoid": "^3.1.20",
     "react-icons": "^4.1.0",
     "react-polling": "^1.0.9"
   },

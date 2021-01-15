@@ -1,6 +1,8 @@
 import React from 'react'
+import { nanoid } from 'nanoid'
+
 import client from 'part:@sanity/base/client'
-import WebhookItem from './deploy-item'
+import DeployItem from './deploy-item'
 
 import Spinner from 'part:@sanity/components/loading/spinner'
 import Snackbar from 'part:@sanity/components/snackbar/default'
@@ -90,7 +92,7 @@ export default class Deploy extends React.Component {
       .create({
         // Explicitly define an _id inside the vercel-deploy path to make sure it's not publicly accessible
         // This will protect users' tokens & project info. Read nmore: https://www.sanity.io/docs/ids
-        _id: `vercel-deploy.${Math.random().toString().replace('.', '')}`,
+        _id: `vercel-deploy.${nanoid()}`,
         _type: WEBHOOK_TYPE,
         name: this.state.pendingWebhookTitle,
         url: this.state.pendingWebhookURL,
@@ -149,7 +151,8 @@ export default class Deploy extends React.Component {
 
   render() {
     const webhookList = this.state.webhooks.map(hook => (
-      <WebhookItem
+      <DeployItem
+        _id={hook._id}
         key={hook._id}
         name={hook.name}
         url={hook.url}
