@@ -8,7 +8,6 @@ import DefaultBadge from 'part:@sanity/components/badges/default'
 import styles from './deploy-item.css'
 
 const deployItem = ({
-  _id,
   name,
   url,
   id,
@@ -144,7 +143,6 @@ const deployItem = ({
             <DefaultBadge color="black">{vercelProject}</DefaultBadge>
           </h4>
           <p className={styles.hookURL}>{url}</p>
-          <p>ID: {_id}</p>
         </div>
         <div className={styles.hookActions}>
           {vercelToken && vercelProject && (

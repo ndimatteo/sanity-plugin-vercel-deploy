@@ -152,7 +152,6 @@ export default class Deploy extends React.Component {
   render() {
     const webhookList = this.state.webhooks.map(hook => (
       <DeployItem
-        _id={hook._id}
         key={hook._id}
         name={hook.name}
         url={hook.url}
