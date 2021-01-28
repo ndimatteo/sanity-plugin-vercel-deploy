@@ -16,6 +16,12 @@ Run the following command in your studio folder using the Sanity CLI:
 sanity install vercel-deploy
 ```
 
+⚠️ **Note:** If your Studio is not using the `@sanity/dashboard` part, you'll need to manually install this as well:
+
+```sh
+sanity install @sanity/dashboard
+```
+
 ## Your first Vercel Deployment
 Once installed, you should see a new "Deploy" tool in your Sanity Studio navbar.
 
