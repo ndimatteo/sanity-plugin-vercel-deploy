@@ -13,7 +13,8 @@ const deployItem = ({
   id,
   vercelProject,
   vercelToken,
-  toggleSnackbar
+  vercelTeamId,
+  toggleSnackbar,
 }) => {
   const [isUpdating, setUpdating] = useState(vercelToken && vercelProject)
   const [isDeploying, setDeploying] = useState(false)
@@ -80,9 +81,11 @@ const deployItem = ({
       method: 'GET',
       headers: {
         'content-type': 'application/json',
-        Authorization: `Bearer ${vercelToken}`
+        Authorization: `Bearer ${vercelToken}`,
       },
-      url: `https://api.vercel.com/v5/now/deployments?projectId=${project}&limit=1`
+      url: `https://api.vercel.com/v5/now/deployments?projectId=${project}&limit=1${
+        vercelTeamId ? `&teamId=${vercelTeamId}` : ''
+      }`,
     }
 
     return axios(options)
@@ -95,7 +98,9 @@ const deployItem = ({
         'content-type': 'application/json',
         Authorization: `Bearer ${vercelToken}`
       },
-      url: `https://api.vercel.com/v1/projects/${id}`
+      url: `https://api.vercel.com/v1/projects/${id}${
+        vercelTeamId ? `?teamId=${vercelTeamId}` : ''
+      }`,
     }
 
     return axios(options)
