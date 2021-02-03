@@ -3,8 +3,9 @@ import axios from 'axios'
 import ReactPolling from 'react-polling'
 
 import client from 'part:@sanity/base/client'
-import Button from 'part:@sanity/components/buttons/default'
-import DefaultBadge from 'part:@sanity/components/badges/default'
+
+import { Badge, Box, Button, Grid, Text, Tooltip } from '@sanity/ui'
+
 import styles from './deploy-item.css'
 
 const deployItem = ({
@@ -13,12 +14,13 @@ const deployItem = ({
   id,
   vercelProject,
   vercelToken,
-  vercelTeamId,
-  toggleSnackbar,
+  vercelTeam,
+  toggleSnackbar
 }) => {
   const [isUpdating, setUpdating] = useState(vercelToken && vercelProject)
   const [isDeploying, setDeploying] = useState(false)
   const [status, setStatus] = useState(false)
+  const [errorMsg, setErrorMsg] = useState(null)
   const [project, setProject] = useState(false)
 
   const statusRef = useRef()
@@ -36,9 +38,15 @@ const deployItem = ({
         })
         .catch(err => {
           console.log(err)
+          const errorMessage = err.response?.data?.error?.message
 
           setStatus('ERROR')
           statusRef.current = 'ERROR'
+
+          if (errorMessage) {
+            setErrorMsg(errorMessage)
+          }
+
           setUpdating(false)
         })
 
@@ -81,11 +89,11 @@ const deployItem = ({
       method: 'GET',
       headers: {
         'content-type': 'application/json',
-        Authorization: `Bearer ${vercelToken}`,
+        Authorization: `Bearer ${vercelToken}`
       },
       url: `https://api.vercel.com/v5/now/deployments?projectId=${project}&limit=1${
-        vercelTeamId ? `&teamId=${vercelTeamId}` : ''
-      }`,
+        vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
+      }`
     }
 
     return axios(options)
@@ -99,8 +107,8 @@ const deployItem = ({
         Authorization: `Bearer ${vercelToken}`
       },
       url: `https://api.vercel.com/v1/projects/${id}${
-        vercelTeamId ? `?teamId=${vercelTeamId}` : ''
-      }`,
+        vercelTeam?.id ? `?teamId=${vercelTeam?.id}` : ''
+      }`
     }
 
     return axios(options)
@@ -117,7 +125,12 @@ const deployItem = ({
         method: 'POST'
       })
       .then(res => {
-        toggleSnackbar(true, 'success', 'Success!', `Deployed webhook: ${name}`)
+        toggleSnackbar(
+          true,
+          'success',
+          'Success!',
+          `Triggered Deployment: ${name}`
+        )
       })
       .catch(err => {
         setDeploying(false)
@@ -130,12 +143,7 @@ const deployItem = ({
     setUpdating(true)
     client.delete(id).then(res => {
       setUpdating(false)
-      toggleSnackbar(
-        true,
-        'success',
-        'Webhook Deleted',
-        `Successfully deleted webhook: ${name}`
-      )
+      toggleSnackbar(true, 'success', 'Success!', `Deleted Deployment: ${name}`)
     })
   }
 
@@ -145,7 +153,14 @@ const deployItem = ({
         <div className={styles.hookDetails}>
           <h4 className={styles.hookTitle}>
             {`${name} `}
-            <DefaultBadge color="black">{vercelProject}</DefaultBadge>
+            <Badge>{vercelProject}</Badge>
+
+            {vercelTeam?.id && (
+              <>
+                {' '}
+                <Badge tone="primary">{vercelTeam?.name}</Badge>
+              </>
+            )}
           </h4>
           <p className={styles.hookURL}>{url}</p>
         </div>
@@ -216,7 +231,36 @@ const deployItem = ({
                       className={styles.hookStatusIndicator}
                       data-indicator={status}
                     >
-                      {titleCase(status)}
+                      {errorMsg ? (
+                        <>
+                          {titleCase(status)}
+                          <Tooltip
+                            content={
+                              <Box padding={2}>
+                                <Text muted size={1}>
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      textAlign: 'center'
+                                    }}
+                                  >
+                                    {errorMsg}
+                                  </span>
+                                </Text>
+                              </Box>
+                            }
+                            placement="top"
+                          >
+                            <span className={styles.hookStatusError}>
+                              <Badge mode="outline" tone="critical">
+                                ?
+                              </Badge>
+                            </span>
+                          </Tooltip>
+                        </>
+                      ) : (
+                        <>{titleCase(status)}</>
+                      )}
                     </span>
                   ) : (
                     <span
@@ -230,27 +274,23 @@ const deployItem = ({
               )}
             </div>
           )}
-          <Button
-            color="success"
-            onClick={() => onDeploy(name, url)}
-            className={styles.deployButton}
-            disabled={isDeploying || isUpdating}
-            loading={isDeploying}
-            type="button"
-          >
-            Deploy
-          </Button>{' '}
-          <Button
-            color="danger"
-            inverted
-            onClick={() => onRemove(name, id)}
-            className={styles.deleteButton}
-            disabled={isDeploying || isUpdating}
-            loading={isUpdating}
-            type="button"
-          >
-            Remove
-          </Button>
+          <Grid columns={[2]} gap={[2]}>
+            <Button
+              type="button"
+              tone="positive"
+              disabled={isDeploying || isUpdating}
+              loading={isDeploying}
+              onClick={() => onDeploy(name, url)}
+              text="Deploy"
+            />{' '}
+            <Button
+              type="button"
+              tone="critical"
+              disabled={isDeploying || isUpdating}
+              onClick={() => onRemove(name, id)}
+              text="Remove"
+            />
+          </Grid>
         </div>
       </div>
     </>

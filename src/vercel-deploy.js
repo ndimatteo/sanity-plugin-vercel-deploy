@@ -32,7 +32,7 @@ export default class Deploy extends React.Component {
       pendingWebhookTitle: '',
       pendingWebhookURL: '',
       pendingVercelProject: '',
-      pendingVercelTeamSlug: '',
+      pendingVercelTeam: '',
       pendingVercelToken: '',
       snackbar: {
         active: false,
@@ -99,24 +99,28 @@ export default class Deploy extends React.Component {
       )
       return
     }
-    
+
     // If we have a team slug, we'll have to get the associated teamId to include in every new request
     // Docs: https://vercel.com/docs/api#api-basics/authentication/accessing-resources-owned-by-a-team
     let vercelTeamId
-    if (this.state.pendingVercelTeamSlug) {
+    let vercelTeamName
+
+    if (this.state.pendingVercelTeam) {
       try {
         const teamRes = await axios.get(
-          `https://api.vercel.com/v1/teams?slug=${this.state.pendingVercelTeamSlug}`,
+          `https://api.vercel.com/v1/teams?slug=${this.state.pendingVercelTeam}`,
           {
             headers: {
-              Authorization: `Bearer ${this.state.pendingVercelToken}`,
-            },
+              Authorization: `Bearer ${this.state.pendingVercelToken}`
+            }
           }
         )
         if (!teamRes?.data?.id) {
           throw 'No team id found'
         }
+        console.log(teamRes)
         vercelTeamId = teamRes.data.id
+        vercelTeamName = teamRes.data.name
       } catch (error) {
         console.error(error)
         this.toggleSnackbar(
@@ -128,7 +132,7 @@ export default class Deploy extends React.Component {
         return
       }
     }
-    
+
     client
       .create({
         // Explicitly define an _id inside the vercel-deploy path to make sure it's not publicly accessible
@@ -138,24 +142,27 @@ export default class Deploy extends React.Component {
         name: this.state.pendingWebhookTitle,
         url: this.state.pendingWebhookURL,
         vercelProject: this.state.pendingVercelProject,
-        vercelTeamSlug: this.state.pendingVercelTeamSlug || undefined,
-        vercelTeamId,
-        vercelToken: this.state.pendingVercelToken,
+        vercelTeam: {
+          slug: this.state.pendingVercelTeam || undefined,
+          name: vercelTeamName || undefined,
+          id: vercelTeamId || undefined
+        },
+        vercelToken: this.state.pendingVercelToken
       })
       .then(() => {
         this.toggleSnackbar(
           true,
           'success',
           'Success!',
-          `Created webhook: ${this.state.pendingWebhookTitle}`
+          `Created Deployment: ${this.state.pendingWebhookTitle}`
         )
         this.setState({
           pendingWebhookTitle: '',
           pendingWebhookURL: '',
           pendingVercelProject: '',
-          pendingVercelTeamSlug: '',
+          pendingVercelTeam: '',
           pendingVercelToken: '',
-          openDialog: false,
+          openDialog: false
         })
       })
   }
@@ -201,7 +208,7 @@ export default class Deploy extends React.Component {
         url={hook.url}
         id={hook._id}
         vercelProject={hook.vercelProject}
-        vercelTeamId={hook.vercelTeamId}
+        vercelTeam={hook.vercelTeam}
         vercelToken={hook.vercelToken}
         toggleSnackbar={this.toggleSnackbar}
       />
@@ -236,7 +243,10 @@ export default class Deploy extends React.Component {
             onClose={() => this.toggleDialog(false)}
             onAction={this.handleAction}
             actions={
-              this.state.pendingWebhookTitle && this.state.pendingWebhookURL
+              this.state.pendingWebhookTitle &&
+              this.state.pendingVercelProject &&
+              this.state.pendingWebhookURL &&
+              this.state.pendingVercelToken
                 ? actions
                 : [actions[1]]
             }
@@ -263,15 +273,12 @@ export default class Deploy extends React.Component {
                   value={this.state.pendingVercelProject}
                 />
                 <DefaultTextField
-                  label="Vercel Team slug (optional)"
-                  description='Example: if the URL of the team is vercel.com/vercel-team, the slug is "vercel-team". Leave this empty if your project is in a personal account.'
-                  onChange={(event) =>
-                    this.setFormValue(
-                      'pendingVercelTeamSlug',
-                      event.target.value
-                    )
+                  label="Vercel Team Slug"
+                  description="Required for projects under a Vercel Team (use team page URL slug)"
+                  onChange={event =>
+                    this.setFormValue('pendingVercelTeam', event.target.value)
                   }
-                  value={this.state.pendingVercelTeamSlug}
+                  value={this.state.pendingVercelTeam}
                 />
                 <DefaultTextField
                   label="Deploy Hook URL"
