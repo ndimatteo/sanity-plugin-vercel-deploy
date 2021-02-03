@@ -3,7 +3,7 @@
 </h3>
 <p align="center">
   <strong>Trigger Vercel Deploy Hooks from your Sanity Studio.</strong><br />
-✨ LIVE status updates ✨ multiple deployments ✨ active polling ✨
+✨ LIVE status updates ✨ multiple deployments ✨ active polling ✨ Vercel Teams support ✨
 </p>
 
 ![vercel-deploy](https://user-images.githubusercontent.com/737188/101732948-047c0080-3a8c-11eb-9c07-777cfe10fa82.gif)
@@ -36,6 +36,10 @@ Next, you'll be prompted to add the following:
 
 > **`Vercel Project Name`**<br />
 > This is the actual Project Name listed in your Vercel account. Navigate to your Project Settings within Vercel to find your Project Name.
+
+> **`Vercel Team Slug`**<br />
+> If your project is part of a Vercel Team you will need to fill out this field. Navigate to your Team from within Vercel, and use the URL slug (ie. vercel.com/`team-666`).
+
 
 > **`Deploy Hook URL`**<br />
 > This is the Vercel Deploy hook you want to trigger. You can set these up within your Vercel Project, under Settings -> Git and scroll down to the "Deploy Hooks" section. Create your desired hook (ie. "Production Deploy" on `master` branch)

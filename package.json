@@ -1,6 +1,6 @@
 {
   "name": "sanity-plugin-vercel-deploy",
-  "version": "1.1.1",
+  "version": "1.1.0",
   "description": "Trigger Vercel Deploy Hooks from your Sanity Studio.",
   "keywords": [
     "sanity",
@@ -18,29 +18,29 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "babel src -d dist --copy-files",
-    "test": "echo \"Error: no test specified\" && exit 1",
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "@babel/runtime": "^7.6.2",
-    "axios": "^0.21.0",
+    "@babel/runtime": "^7.12.5",
+    "axios": "^0.21.1",
     "nanoid": "^3.1.20",
-    "react-icons": "^4.1.0",
-    "react-polling": "^1.0.9"
+    "react-polling": "^1.0.9",
+    "prop-types": "^15.7.2"
   },
   "devDependencies": {
-    "@babel/cli": "^7.6.3",
-    "@babel/core": "^7.6.3",
-    "@babel/plugin-proposal-class-properties": "^7.1.0",
-    "@babel/plugin-transform-runtime": "^7.6.2",
-    "@babel/preset-env": "^7.0.0",
-    "@babel/preset-react": "^7.0.0"
+    "@babel/cli": "^7.12.10",
+    "@babel/core": "^7.12.10",
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/plugin-transform-runtime": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/preset-react": "^7.12.10"
   },
   "peerDependencies": {
     "@sanity/base": "^2.1.1",
     "@sanity/components": "^2.1.0",
     "@sanity/dashboard": "^2.1.0",
-    "@sanity/icons": "^1.0.0-beta.4",
+    "@sanity/icons": "^1.0.0",
+    "@sanity/ui": "^0.33.0",
     "react": "^16.14.0",
     "react-dom": "^16.14.0"
   },
