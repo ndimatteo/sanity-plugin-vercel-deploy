@@ -7,6 +7,7 @@ import client from 'part:@sanity/base/client'
 import { Badge, Box, Button, Grid, Text, Tooltip } from '@sanity/ui'
 
 import styles from './deploy-item.css'
+import DeployLog from './deploy-log'
 
 const deployItem = ({
   name,
@@ -293,6 +294,12 @@ const deployItem = ({
           </Grid>
         </div>
       </div>
+			<div className={styles.hookDetails}>
+				<DeployLog vercelProject={project}
+					vercelToken={vercelToken}
+					vercelTeam={vercelTeam} />
+
+			</div>
     </>
   )
 }
