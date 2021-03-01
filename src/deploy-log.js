@@ -6,9 +6,9 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
   const [state, setState] = useState({})
 
   useEffect(() => {
-		if (!vercelProject) {
-			return;
-		}
+    if (!vercelProject) {
+      return
+    }
     setState({ loading: true })
     const options = {
       method: 'GET',
@@ -58,13 +58,15 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
   }
 
   return (
-    <Box as="table">
-      <Box as="thead">
-        <th>Deployment</th>
-        <th>State</th>
-        <th>Commit</th>
-        <th>Time</th>
-        <th>Creator</th>
+    <Box as="table" style={{ display: 'table' }}>
+      <Box as="thead" style={{ display: 'table-header-group' }}>
+        <tr>
+          <th>Deployment</th>
+          <th>State</th>
+          <th>Commit</th>
+          <th>Time</th>
+          <th>Creator</th>
+        </tr>
       </Box>
       <Box as="tbody">
         {state.deployments?.map(deployment => (
@@ -81,6 +83,7 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
                 .replace(/^[a-z]/i, t => t.toUpperCase())}
             </td>
             <td>{deployment.meta?.githubCommitMessage}</td>
+            <td></td>
             <td>
               <Tooltip
                 content={
