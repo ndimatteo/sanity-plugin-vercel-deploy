@@ -1,6 +1,7 @@
 import { Avatar, Box, Card, Flex, Spinner, Text, Tooltip } from '@sanity/ui'
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
+import styles from './deploy-log.css'
 
 const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
   const [state, setState] = useState({})
@@ -58,7 +59,7 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
   }
 
   return (
-    <Box as="table" style={{ display: 'table' }}>
+    <Box as="table" className={styles.table}>
       <Box as="thead" style={{ display: 'table-header-group' }}>
         <tr>
           <th>Deployment</th>
@@ -68,7 +69,7 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
           <th>Creator</th>
         </tr>
       </Box>
-      <Box as="tbody">
+      <Box as="tbody" style={{ display: 'table-row-group' }}>
         {state.deployments?.map(deployment => (
           <tr as="tr" key={deployment.uid}>
             <td>
@@ -98,7 +99,6 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
               >
                 <Avatar
                   alt={deployment?.creator?.username}
-                  color="magenta"
                   src={`https://vercel.com/api/www/avatar/${deployment?.creator?.uid}?&s=48`}
                   size={1}
                   style={{ margin: 'auto' }}

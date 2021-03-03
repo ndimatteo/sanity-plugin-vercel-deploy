@@ -4,7 +4,7 @@ import ReactPolling from 'react-polling'
 
 import client from 'part:@sanity/base/client'
 
-import { Badge, Box, Button, Grid, Text, Tooltip } from '@sanity/ui'
+import { Badge, Box, Button, Dialog, Grid, Text, Tooltip } from '@sanity/ui'
 
 import styles from './deploy-item.css'
 import DeployLog from './deploy-log'
@@ -23,6 +23,7 @@ const deployItem = ({
   const [status, setStatus] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
   const [project, setProject] = useState(false)
+  const [isDeployLogOpen, setIsDeployLogOpen] = useState(false)
 
   const statusRef = useRef()
   statusRef.current = false
@@ -275,7 +276,7 @@ const deployItem = ({
               )}
             </div>
           )}
-          <Grid columns={[2]} gap={[2]}>
+          <Grid columns={[3]} gap={[2]}>
             <Button
               type="button"
               tone="positive"
@@ -291,15 +292,34 @@ const deployItem = ({
               onClick={() => onRemove(name, id)}
               text="Remove"
             />
+            <Button
+              type="button"
+              tone="neutral"
+							disabled={!project}
+              onClick={() => setIsDeployLogOpen(true)}
+              text="Deployments"
+            />
           </Grid>
         </div>
       </div>
-			<div className={styles.hookDetails}>
-				<DeployLog vercelProject={project}
-					vercelToken={vercelToken}
-					vercelTeam={vercelTeam} />
 
-			</div>
+      {isDeployLogOpen && (
+        <Dialog
+          header="Recent Deployments"
+					onClickOutside={() => setIsDeployLogOpen(false)}
+          onClose={() => setIsDeployLogOpen(false)}
+					width={null}
+          zOffset={1000}
+        >
+          <Box padding={4}>
+            <DeployLog
+              vercelProject={project}
+              vercelToken={vercelToken}
+              vercelTeam={vercelTeam}
+            />
+          </Box>
+        </Dialog>
+      )}
     </>
   )
 }
