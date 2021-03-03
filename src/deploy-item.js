@@ -9,6 +9,7 @@ import AnchorButton from 'part:@sanity/components/buttons/anchor'
 
 import styles from './deploy-item.css'
 import DeployLog from './deploy-log'
+import Status, { titleCase } from './status'
 
 const deployItem = ({
   name,
@@ -200,41 +201,21 @@ const deployItem = ({
                       return (
                         <div>
                           {status ? (
-                            <span
-                              className={styles.hookStatusIndicator}
-                              data-indicator={status}
-                            >
-                              {titleCase(status)}
-                            </span>
+                            <Status status={status}>{titleCase(status)}</Status>
                           ) : (
-                            <span
-                              className={styles.hookStatusIndicator}
-                              data-indicator="LOADING"
-                            >
-                              Loading
-                            </span>
+                            <Status status="LOADING">Loading</Status>
                           )}
                         </div>
                       )
                     } else {
-                      return (
-                        <div
-                          className={styles.hookStatusIndicator}
-                          data-indicator="INACTIVE"
-                        >
-                          Status Inactive
-                        </div>
-                      )
+                      return <Status status="INACTIVE">Status Inactive</Status>
                     }
                   }}
                 />
               ) : (
                 <>
                   {status ? (
-                    <span
-                      className={styles.hookStatusIndicator}
-                      data-indicator={status}
-                    >
+                    <Status status={status}>
                       {errorMsg ? (
                         <>
                           {titleCase(status)}
@@ -265,14 +246,9 @@ const deployItem = ({
                       ) : (
                         <>{titleCase(status)}</>
                       )}
-                    </span>
+                    </Status>
                   ) : (
-                    <span
-                      className={styles.hookStatusIndicator}
-                      data-indicator="LOADING"
-                    >
-                      Loading
-                    </span>
+                    <Status status="LOADING">Loading</Status>
                   )}
                 </>
               )}
@@ -335,16 +311,6 @@ const deployItem = ({
       )}
     </>
   )
-}
-
-const titleCase = str => {
-  return str
-    .toLowerCase()
-    .split(' ')
-    .map(word => {
-      return word.charAt(0).toUpperCase() + word.slice(1)
-    })
-    .join(' ')
 }
 
 export default deployItem

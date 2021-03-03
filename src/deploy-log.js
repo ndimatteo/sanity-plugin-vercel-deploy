@@ -3,6 +3,7 @@ import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import TimeAgo from './time-ago'
 import styles from './deploy-log.css'
+import Status, { titleCase } from './status'
 
 const DeployLog = ({ offset, vercelProject, vercelToken, vercelTeam }) => {
   const [state, setState] = useState({})
@@ -78,10 +79,9 @@ const DeployLog = ({ offset, vercelProject, vercelToken, vercelTeam }) => {
               </a>
             </td>
             <td>
-              {deployment.state
-                .trim()
-                .toLowerCase()
-                .replace(/^[a-z]/i, t => t.toUpperCase())}
+							<Status status={deployment.state}>
+								{titleCase(deployment.state)}
+							</Status>
             </td>
             <td>
               <div>{deployment.meta?.githubCommitRef}</div>
