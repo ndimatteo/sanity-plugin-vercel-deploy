@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import TimeAgo from './time-ago'
 import styles from './deploy-log.css'
 
-const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
+const DeployLog = ({ offset, vercelProject, vercelToken, vercelTeam }) => {
   const [state, setState] = useState({})
 
   useEffect(() => {
@@ -18,7 +18,7 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
         'content-type': 'application/json',
         Authorization: `Bearer ${vercelToken}`
       },
-      url: `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&limit=5${
+      url: `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&limit=${offset}${
         vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
       }`
     }
@@ -38,7 +38,7 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
         })
         console.warn(e)
       })
-  }, [vercelProject])
+  }, [vercelProject, offset])
 
   if (state.loading) {
     return (

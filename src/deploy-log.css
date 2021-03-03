@@ -19,6 +19,10 @@
 	padding: 0.5em;
 }
 
+.table tr:last-child td {
+	border-bottom: none;
+}
+
 .commit {
 	color: var(--gray);
 }
