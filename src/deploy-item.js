@@ -276,7 +276,7 @@ const deployItem = ({
               )}
             </div>
           )}
-          <Grid columns={[3]} gap={[2]}>
+          <Grid columns={[1, 3]} gap={[2]}>
             <Button
               type="button"
               tone="positive"

@@ -1,4 +1,5 @@
 import React from 'react'
+import { Box, Text, Tooltip } from '@sanity/ui'
 
 // in miliseconds
 const units = {
@@ -11,10 +12,10 @@ const units = {
 }
 
 const TimeAgo = ({ date }) => {
-
-	if (typeof Intl === "undefined" || !Intl.RelativeTimeFormat) {
-		return new Date(date).toLocaleString();
-	}
+  const dateStr = new Date(date).toLocaleString()
+  if (typeof Intl === 'undefined' || !Intl.RelativeTimeFormat) {
+    return dateStr
+  }
 
   const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
 
@@ -28,7 +29,23 @@ const TimeAgo = ({ date }) => {
       }
   }
 
-  return getRelativeTime(date, new Date())
+  return (
+    <Tooltip
+      content={
+        <Box padding={2}>
+          <Text muted size={1}>
+            {dateStr}
+          </Text>
+        </Box>
+      }
+      fallbackPlacements={['right', 'left']}
+      placement="top"
+    >
+      <Box paddingY={2}>
+        <Text size={1}>{getRelativeTime(date, new Date())}</Text>
+      </Box>
+    </Tooltip>
+  )
 }
 
 export default TimeAgo
