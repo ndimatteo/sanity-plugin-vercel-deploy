@@ -275,7 +275,7 @@ const deployItem = ({
               tone="neutral"
               disabled={!project}
               onClick={() => setIsDeployLogOpen(true)}
-              text="Deployments"
+              text="Logs"
             />
           </Grid>
         </div>
