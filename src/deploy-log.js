@@ -1,6 +1,7 @@
 import { Avatar, Box, Card, Flex, Spinner, Text, Tooltip } from '@sanity/ui'
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
+import TimeAgo from './time-ago'
 import styles from './deploy-log.css'
 
 const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
@@ -24,7 +25,6 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
 
     axios(options)
       .then(({ data }) => {
-        console.log(data)
         setState({
           deployments: data.deployments,
           loading: false,
@@ -83,14 +83,21 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
                 .toLowerCase()
                 .replace(/^[a-z]/i, t => t.toUpperCase())}
             </td>
-            <td>{deployment.meta?.githubCommitMessage}</td>
-            <td></td>
+            <td>
+              <div>{deployment.meta?.githubCommitRef}</div>
+              <small className={styles.commit}>
+                {deployment.meta?.githubCommitMessage}
+              </small>
+            </td>
+            <td>
+              <TimeAgo date={deployment.created} />
+            </td>
             <td>
               <Tooltip
                 content={
                   <Box padding={2}>
                     <Text muted size={1}>
-                      {deployment?.creator?.username}
+                      {deployment.creator?.username}
                     </Text>
                   </Box>
                 }
@@ -98,8 +105,8 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
                 placement="top"
               >
                 <Avatar
-                  alt={deployment?.creator?.username}
-                  src={`https://vercel.com/api/www/avatar/${deployment?.creator?.uid}?&s=48`}
+                  alt={deployment.creator?.username}
+                  src={`https://vercel.com/api/www/avatar/${deployment.creator?.uid}?&s=48`}
                   size={1}
                   style={{ margin: 'auto' }}
                 />

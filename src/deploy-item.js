@@ -305,7 +305,7 @@ const deployItem = ({
 
       {isDeployLogOpen && (
         <Dialog
-          header="Recent Deployments"
+          header={`Recent deployments for ${vercelProject}`}
 					onClickOutside={() => setIsDeployLogOpen(false)}
           onClose={() => setIsDeployLogOpen(false)}
 					width={null}
