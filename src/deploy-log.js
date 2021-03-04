@@ -79,9 +79,9 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
               </a>
             </td>
             <td>
-							<Status status={deployment.state}>
-								{titleCase(deployment.state)}
-							</Status>
+              <Status status={deployment.state}>
+                {titleCase(deployment.state)}
+              </Status>
             </td>
             <td>
               <div>{deployment.meta?.githubCommitRef}</div>
