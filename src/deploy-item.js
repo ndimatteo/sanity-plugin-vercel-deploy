@@ -289,7 +289,6 @@ const deployItem = ({
         >
           <Box padding={4}>
             <DeployLog
-              offset={offset}
               vercelProject={project}
               vercelToken={vercelToken}
               vercelTeam={vercelTeam}

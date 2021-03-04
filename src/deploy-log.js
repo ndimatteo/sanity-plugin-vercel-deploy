@@ -39,7 +39,7 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
         })
         console.warn(e)
       })
-  }, [vercelProject, offset])
+  }, [vercelProject])
 
   if (state.loading) {
     return (
