@@ -5,7 +5,7 @@ import TimeAgo from './time-ago'
 import styles from './deploy-log.css'
 import Status, { titleCase } from './status'
 
-const DeployLog = ({ offset, vercelProject, vercelToken, vercelTeam }) => {
+const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
   const [state, setState] = useState({})
 
   useEffect(() => {
@@ -19,7 +19,7 @@ const DeployLog = ({ offset, vercelProject, vercelToken, vercelTeam }) => {
         'content-type': 'application/json',
         Authorization: `Bearer ${vercelToken}`
       },
-      url: `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&limit=${offset}${
+      url: `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&limit=5${
         vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
       }`
     }

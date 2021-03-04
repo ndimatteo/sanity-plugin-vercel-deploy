@@ -5,7 +5,6 @@ import ReactPolling from 'react-polling'
 import client from 'part:@sanity/base/client'
 
 import { Badge, Box, Button, Dialog, Grid, Text, Tooltip } from '@sanity/ui'
-import AnchorButton from 'part:@sanity/components/buttons/anchor'
 
 import styles from './deploy-item.css'
 import DeployLog from './deploy-log'
@@ -26,7 +25,6 @@ const deployItem = ({
   const [errorMsg, setErrorMsg] = useState(null)
   const [project, setProject] = useState(false)
   const [isDeployLogOpen, setIsDeployLogOpen] = useState(false)
-  const [offset, setOffset] = useState(5)
 
   const statusRef = useRef()
   statusRef.current = false
@@ -284,16 +282,6 @@ const deployItem = ({
       {isDeployLogOpen && (
         <Dialog
           header={`Recent deployments for ${vercelProject}`}
-          footer={
-            <AnchorButton
-              onClick={() => setOffset(offset + 5)}
-              bleed
-              color="primary"
-              kind="simple"
-            >
-              Load more
-            </AnchorButton>
-          }
           onClickOutside={() => setIsDeployLogOpen(false)}
           onClose={() => setIsDeployLogOpen(false)}
           width={null}
