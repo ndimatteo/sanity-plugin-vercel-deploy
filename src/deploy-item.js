@@ -2,9 +2,21 @@ import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import ReactPolling from 'react-polling'
 
-import client from 'part:@sanity/base/client'
+import sanityClient from 'part:@sanity/base/client'
 
-import { Badge, Box, Button, Grid, Text, Tooltip } from '@sanity/ui'
+import {
+  useToast,
+  Menu,
+  MenuButton,
+  MenuItem,
+  Badge,
+  Box,
+  Button,
+  Inline,
+  Text,
+  Tooltip
+} from '@sanity/ui'
+import { EllipsisVerticalIcon, TrashIcon } from '@sanity/icons'
 
 import styles from './deploy-item.css'
 
@@ -14,9 +26,10 @@ const deployItem = ({
   id,
   vercelProject,
   vercelToken,
-  vercelTeam,
-  toggleSnackbar
+  vercelTeam
 }) => {
+  const client = sanityClient.withConfig({ apiVersion: '2021-03-25' })
+
   const [isUpdating, setUpdating] = useState(vercelToken && vercelProject)
   const [isDeploying, setDeploying] = useState(false)
   const [status, setStatus] = useState(false)
@@ -25,6 +38,8 @@ const deployItem = ({
 
   const statusRef = useRef()
   statusRef.current = false
+
+  const toast = useToast()
 
   useEffect(() => {
     let isSubscribed = true
@@ -53,13 +68,18 @@ const deployItem = ({
       // get latest project deployment
       if (project) {
         getLatestDeployment().then(res => {
+          console.log(res)
           if (isSubscribed) {
             const deployment = res.data.deployments[0]
 
             setUpdating(false)
             setStatus(deployment.state)
 
-            if (status !== 'READY' || status !== 'ERROR') {
+            if (
+              deployment.state !== 'READY' &&
+              deployment.state !== 'ERROR' &&
+              deployment.state !== 'CANCELED'
+            ) {
               setDeploying(true)
             }
           }
@@ -118,23 +138,24 @@ const deployItem = ({
     setDeploying(true)
     setStatus('INITIATED')
 
-    toggleSnackbar(false)
-
     global
       .fetch(url, {
         method: 'POST'
       })
       .then(res => {
-        toggleSnackbar(
-          true,
-          'success',
-          'Success!',
-          `Triggered Deployment: ${name}`
-        )
+        toast.push({
+          status: 'success',
+          title: 'Success!',
+          description: `Triggered Deployment: ${name}`
+        })
       })
       .catch(err => {
         setDeploying(false)
-        toggleSnackbar(true, 'error', 'Deploy Failed', `${err}`)
+        toast.push({
+          status: 'error',
+          title: 'Deploy Failed.',
+          description: `${err}`
+        })
         console.log(err)
       })
   }
@@ -142,8 +163,10 @@ const deployItem = ({
   const onRemove = (name, id) => {
     setUpdating(true)
     client.delete(id).then(res => {
-      setUpdating(false)
-      toggleSnackbar(true, 'success', 'Success!', `Deleted Deployment: ${name}`)
+      toast.push({
+        status: 'success',
+        title: `Successfully deleted deployment: ${name}`
+      })
     })
   }
 
@@ -274,7 +297,7 @@ const deployItem = ({
               )}
             </div>
           )}
-          <Grid columns={[2]} gap={[2]}>
+          <Inline space={2}>
             <Button
               type="button"
               tone="positive"
@@ -282,15 +305,29 @@ const deployItem = ({
               loading={isDeploying}
               onClick={() => onDeploy(name, url)}
               text="Deploy"
-            />{' '}
-            <Button
-              type="button"
-              tone="critical"
-              disabled={isDeploying || isUpdating}
-              onClick={() => onRemove(name, id)}
-              text="Remove"
             />
-          </Grid>
+            <MenuButton
+              button={
+                <Button
+                  mode="bleed"
+                  icon={EllipsisVerticalIcon}
+                  disabled={isDeploying || isUpdating}
+                />
+              }
+              portal
+              menu={
+                <Menu>
+                  <MenuItem
+                    text="Delete"
+                    icon={TrashIcon}
+                    tone="critical"
+                    onClick={() => onRemove(name, id)}
+                  />
+                </Menu>
+              }
+              placement="bottom"
+            />
+          </Inline>
         </div>
       </div>
     </>
