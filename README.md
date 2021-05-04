@@ -6,7 +6,8 @@
 ✨ LIVE status updates ✨ multiple deployments ✨ active polling ✨ Vercel Teams support ✨
 </p>
 
-![vercel-deploy](https://user-images.githubusercontent.com/737188/101732948-047c0080-3a8c-11eb-9c07-777cfe10fa82.gif)
+![vercel-deploy-v2](https://user-images.githubusercontent.com/737188/117056293-28193f00-acea-11eb-97f6-4c133d5aa401.png)
+
 
 ## Install
 
