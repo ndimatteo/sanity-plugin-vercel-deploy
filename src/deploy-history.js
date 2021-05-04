@@ -1,11 +1,20 @@
-import { Avatar, Box, Card, Flex, Spinner, Text, Tooltip } from '@sanity/ui'
-import axios from 'axios'
 import React, { useEffect, useState } from 'react'
-import TimeAgo from './time-ago'
-import styles from './deploy-log.css'
-import Status, { titleCase } from './status'
+import axios from 'axios'
+import useSWR from 'swr'
+import spacetime from 'spacetime'
 
-const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
+import { Avatar, Box, Card, Flex, Spinner, Text, Tooltip } from '@sanity/ui'
+
+import styles from './deploy-history.css'
+import StatusIndicator from './deploy-status'
+
+const DeployHistory = ({
+  url,
+  vercelProject,
+  vercelToken,
+  vercelTeam,
+  hookContext
+}) => {
   const [state, setState] = useState({})
 
   useEffect(() => {
@@ -13,18 +22,19 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
       return
     }
     setState({ loading: true })
-    const options = {
-      method: 'GET',
-      headers: {
-        'content-type': 'application/json',
-        Authorization: `Bearer ${vercelToken}`
-      },
-      url: `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&limit=5${
-        vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
-      }`
-    }
 
-    axios(options)
+    axios
+      .get(
+        `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&meta-deployHookId=${url
+          .split('/')
+          .pop()}&limit=6${vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''}`,
+        {
+          headers: {
+            'content-type': 'application/json',
+            Authorization: `Bearer ${vercelToken}`
+          }
+        }
+      )
       .then(({ data }) => {
         setState({
           deployments: data.deployments,
@@ -79,9 +89,7 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
               </a>
             </td>
             <td>
-              <Status status={deployment.state}>
-                {titleCase(deployment.state)}
-              </Status>
+              <StatusIndicator status={deployment.state} />
             </td>
             <td>
               <div>{deployment.meta?.githubCommitRef}</div>
@@ -90,7 +98,7 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
               </small>
             </td>
             <td>
-              <TimeAgo date={deployment.created} />
+              {spacetime.now().since(spacetime(deployment.created)).rounded}
             </td>
             <td>
               <Tooltip
@@ -119,4 +127,4 @@ const DeployLog = ({ vercelProject, vercelToken, vercelTeam }) => {
   )
 }
 
-export default DeployLog
+export default DeployHistory

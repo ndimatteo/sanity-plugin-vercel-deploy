@@ -28,39 +28,40 @@ import {
 import styles from './vercel-deploy.css'
 import DeployItem from './deploy-item'
 
+const initialDeploy = {
+  title: '',
+  project: '',
+  team: '',
+  url: '',
+  token: ''
+}
+
 const VercelDeploy = () => {
   const WEBHOOK_TYPE = 'webhook_deploy'
   const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
   const client = sanityClient.withConfig({ apiVersion: '2021-03-25' })
 
   const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [webhooks, setWebhooks] = useState([])
-  const [pendingWebhook, setPendingWebhook] = useState({})
+  const [deploys, setDeploys] = useState([])
+  const [pendingDeploy, setpendingDeploy] = useState(initialDeploy)
   const toast = useToast()
-
-  const fetchAllWebhooks = () => {
-    console.log('fetching webhooks!')
-
-    client.fetch(WEBHOOK_QUERY).then(webhooks => {
-      setWebhooks(webhooks)
-      setIsLoading(false)
-    })
-  }
 
   const onSubmit = async () => {
     // If we have a team slug, we'll have to get the associated teamId to include in every new request
     // Docs: https://vercel.com/docs/api#api-basics/authentication/accessing-resources-owned-by-a-team
     let vercelTeamID
     let vercelTeamName
+    setIsSubmitting(true)
 
-    if (pendingWebhook.team) {
+    if (pendingDeploy.team) {
       try {
         const fetchTeam = await axios.get(
-          `https://api.vercel.com/v1/teams?slug=${pendingWebhook.team}`,
+          `https://api.vercel.com/v1/teams?slug=${pendingDeploy.team}`,
           {
             headers: {
-              Authorization: `Bearer ${pendingWebhook.token}`
+              Authorization: `Bearer ${pendingDeploy.token}`
             }
           }
         )
@@ -73,10 +74,12 @@ const VercelDeploy = () => {
         vercelTeamName = fetchTeam.data.name
       } catch (error) {
         console.error(error)
+        setIsSubmitting(false)
 
         toast.push({
           status: 'error',
           title: 'No Team found!',
+          closable: true,
           description:
             'Make sure the token you provided is valid and that the team’s slug correspond to the one you see in Vercel'
         })
@@ -91,55 +94,57 @@ const VercelDeploy = () => {
         // This will protect users' tokens & project info. Read more: https://www.sanity.io/docs/ids
         _id: `vercel-deploy.${nanoid()}`,
         _type: WEBHOOK_TYPE,
-        name: pendingWebhook.title,
-        url: pendingWebhook.url,
-        vercelProject: pendingWebhook.project,
+        name: pendingDeploy.title,
+        url: pendingDeploy.url,
+        vercelProject: pendingDeploy.project,
         vercelTeam: {
-          slug: pendingWebhook.team || undefined,
+          slug: pendingDeploy.team || undefined,
           name: vercelTeamName || undefined,
           id: vercelTeamID || undefined
         },
-        vercelToken: pendingWebhook.token
+        vercelToken: pendingDeploy.token
       })
       .then(() => {
         toast.push({
           status: 'success',
           title: 'Success!',
-          description: `Created Deployment: ${pendingWebhook.title}`
+          description: `Created Deployment: ${pendingDeploy.title}`
         })
         setIsFormOpen(false)
-        setPendingWebhook({}) // Reset the pending webhook state
+        setIsSubmitting(false)
+        setpendingDeploy(initialDeploy) // Reset the pending webhook state
       })
   }
 
   // Fetch all existing webhooks and listen for newly created
-  let webhookSubscription = null
   useEffect(() => {
-    if (webhookSubscription !== null) return
+    let webhookSubscription
 
-    fetchAllWebhooks()
+    client.fetch(WEBHOOK_QUERY).then(w => {
+      setDeploys(w)
+      setIsLoading(false)
 
-    webhookSubscription = client
-      .listen(WEBHOOK_QUERY, {}, { includeResult: true })
-      .subscribe(res => {
-        console.log(res)
-        const wasCreated = res.mutations.some(item =>
-          Object.prototype.hasOwnProperty.call(item, 'create')
-        )
-        const wasDeleted = res.mutations.some(item =>
-          Object.prototype.hasOwnProperty.call(item, 'delete')
-        )
-        if (wasCreated) {
-          setWebhooks(prevState => {
-            return [...prevState, res.result]
-          })
-        }
-        if (wasDeleted) {
-          console.log(webhooks)
-          const newWebhooks = webhooks.filter(w => w._id !== res.documentId)
-          setWebhooks(newWebhooks)
-        }
-      })
+      webhookSubscription = client
+        .listen(WEBHOOK_QUERY, {}, { includeResult: true })
+        .subscribe(res => {
+          const wasCreated = res.mutations.some(item =>
+            Object.prototype.hasOwnProperty.call(item, 'create')
+          )
+          const wasDeleted = res.mutations.some(item =>
+            Object.prototype.hasOwnProperty.call(item, 'delete')
+          )
+          if (wasCreated) {
+            setDeploys(prevState => {
+              return [...prevState, res.result]
+            })
+          }
+          if (wasDeleted) {
+            setDeploys(prevState =>
+              prevState.filter(w => w._id !== res.documentId)
+            )
+          }
+        })
+    })
 
     return () => {
       webhookSubscription && webhookSubscription.unsubscribe()
@@ -176,26 +181,20 @@ const VercelDeploy = () => {
                     </Box>
                   </Flex>
                 </div>
+              ) : deploys.length ? (
+                deploys.map(deploy => (
+                  <DeployItem
+                    key={deploy._id}
+                    name={deploy.name}
+                    url={deploy.url}
+                    id={deploy._id}
+                    vercelProject={deploy.vercelProject}
+                    vercelTeam={deploy.vercelTeam}
+                    vercelToken={deploy.vercelToken}
+                  />
+                ))
               ) : (
-                <>
-                  {webhooks.length ? (
-                    <>
-                      {webhooks.map(hook => (
-                        <DeployItem
-                          key={hook._id}
-                          name={hook.name}
-                          url={hook.url}
-                          id={hook._id}
-                          vercelProject={hook.vercelProject}
-                          vercelTeam={hook.vercelTeam}
-                          vercelToken={hook.vercelToken}
-                        />
-                      ))}
-                    </>
-                  ) : (
-                    <EmptyState />
-                  )}
-                </>
+                <EmptyState />
               )}
             </div>
 
@@ -217,6 +216,7 @@ const VercelDeploy = () => {
             header="New Deployment"
             id="create-webhook"
             width={1}
+            onClickOutside={() => setIsFormOpen(false)}
             onClose={() => setIsFormOpen(false)}
             footer={
               <Box padding={3}>
@@ -231,11 +231,13 @@ const VercelDeploy = () => {
                     padding={4}
                     text="Publish"
                     tone="primary"
+                    loading={isSubmitting}
                     onClick={() => onSubmit()}
                     disabled={
-                      !pendingWebhook.project ||
-                      !pendingWebhook.url ||
-                      !pendingWebhook.token
+                      isSubmitting ||
+                      !pendingDeploy.project ||
+                      !pendingDeploy.url ||
+                      !pendingDeploy.token
                     }
                   />
                 </Grid>
@@ -250,10 +252,10 @@ const VercelDeploy = () => {
                 >
                   <TextInput
                     type="text"
-                    value={pendingWebhook.title}
+                    value={pendingDeploy.title}
                     onChange={e => {
                       e.persist()
-                      setPendingWebhook(prevState => ({
+                      setpendingDeploy(prevState => ({
                         ...prevState,
                         ...{ title: e?.target?.value }
                       }))
@@ -267,10 +269,10 @@ const VercelDeploy = () => {
                 >
                   <TextInput
                     type="text"
-                    value={pendingWebhook.project}
+                    value={pendingDeploy.project}
                     onChange={e => {
                       e.persist()
-                      setPendingWebhook(prevState => ({
+                      setpendingDeploy(prevState => ({
                         ...prevState,
                         ...{ project: e?.target?.value }
                       }))
@@ -284,10 +286,10 @@ const VercelDeploy = () => {
                 >
                   <TextInput
                     type="text"
-                    value={pendingWebhook.team}
+                    value={pendingDeploy.team}
                     onChange={e => {
                       e.persist()
-                      setPendingWebhook(prevState => ({
+                      setpendingDeploy(prevState => ({
                         ...prevState,
                         ...{ team: e?.target?.value }
                       }))
@@ -302,10 +304,10 @@ const VercelDeploy = () => {
                   <TextInput
                     type="text"
                     inputMode="url"
-                    value={pendingWebhook.url}
+                    value={pendingDeploy.url}
                     onChange={e => {
                       e.persist()
-                      setPendingWebhook(prevState => ({
+                      setpendingDeploy(prevState => ({
                         ...prevState,
                         ...{ url: e?.target?.value }
                       }))
@@ -319,10 +321,10 @@ const VercelDeploy = () => {
                 >
                   <TextInput
                     type="text"
-                    value={pendingWebhook.token}
+                    value={pendingDeploy.token}
                     onChange={e => {
                       e.persist()
-                      setPendingWebhook(prevState => ({
+                      setpendingDeploy(prevState => ({
                         ...prevState,
                         ...{ token: e?.target?.value }
                       }))

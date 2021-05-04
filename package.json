@@ -25,7 +25,8 @@
     "axios": "^0.21.1",
     "nanoid": "^3.1.20",
     "prop-types": "^15.7.2",
-    "react-polling": "^1.0.9"
+    "spacetime": "^6.16.0",
+    "swr": "^0.5.6"
   },
   "devDependencies": {
     "@babel/cli": "^7.12.10",
