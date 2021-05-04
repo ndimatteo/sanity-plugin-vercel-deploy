@@ -1,134 +1,89 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { nanoid } from 'nanoid'
 import axios from 'axios'
 
-import client from 'part:@sanity/base/client'
-import DeployItem from './deploy-item'
-
-import Spinner from 'part:@sanity/components/loading/spinner'
-import Snackbar from 'part:@sanity/components/snackbar/default'
-import DefaultDialog from 'part:@sanity/components/dialogs/default'
-import DefaultTextField from 'part:@sanity/components/textfields/default'
+import sanityClient from 'part:@sanity/base/client'
 import AnchorButton from 'part:@sanity/components/buttons/anchor'
-
+import FormField from 'part:@sanity/components/formfields/default'
 import WarningIcon from 'part:@sanity/base/warning-icon'
-import Alert from 'part:@sanity/components/alerts/alert'
+import {
+  studioTheme,
+  ThemeProvider,
+  ToastProvider,
+  useToast,
+  Dialog,
+  Grid,
+  Flex,
+  Box,
+  Card,
+  Stack,
+  Spinner,
+  Button,
+  Text,
+  Inline,
+  Heading,
+  TextInput
+} from '@sanity/ui'
 
 import styles from './vercel-deploy.css'
+import DeployItem from './deploy-item'
 
-const WEBHOOK_TYPE = 'webhook_deploy'
-const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
+const initialDeploy = {
+  title: '',
+  project: '',
+  team: '',
+  url: '',
+  token: ''
+}
 
-export default class Deploy extends React.Component {
-  constructor(props) {
-    super(props)
+const VercelDeploy = () => {
+  const WEBHOOK_TYPE = 'webhook_deploy'
+  const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
+  const client = sanityClient.withConfig({ apiVersion: '2021-03-25' })
 
-    this.state = {
-      webhooks: [],
-      isLoading: true,
-      isUpdating: false,
-      isDeploying: false,
-      openDialog: false,
-      pendingWebhookTitle: '',
-      pendingWebhookURL: '',
-      pendingVercelProject: '',
-      pendingVercelTeam: '',
-      pendingVercelToken: '',
-      snackbar: {
-        active: false,
-        kind: '',
-        title: '',
-        message: ''
-      }
-    }
-  }
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [deploys, setDeploys] = useState([])
+  const [pendingDeploy, setpendingDeploy] = useState(initialDeploy)
+  const toast = useToast()
 
-  componentDidMount = () => {
-    // Fetch initial
-    this.fetchAllWebhooks()
-
-    // Listen to new stuff
-    this.webhookSubscription = client
-      .listen(WEBHOOK_QUERY, {}, { includeResult: true })
-      .subscribe(res => {
-        const wasCreated = res.mutations.some(item =>
-          Object.prototype.hasOwnProperty.call(item, 'create')
-        )
-        const wasDeleted = res.mutations.some(item =>
-          Object.prototype.hasOwnProperty.call(item, 'delete')
-        )
-        if (wasCreated) {
-          this.setState({
-            webhooks: [...this.state.webhooks, res.result]
-          })
-        }
-        if (wasDeleted) {
-          const newHooks = this.state.webhooks.filter(
-            hook => hook._id !== res.documentId
-          )
-          this.setState({
-            webhooks: newHooks
-          })
-        }
-      })
-  }
-
-  componentWillUnmount = () => {
-    this.webhookSubscription && this.webhookSubscription.unsubscribe()
-  }
-
-  fetchAllWebhooks = () => {
-    client.fetch(WEBHOOK_QUERY).then(webhooks => {
-      this.setState({ webhooks: webhooks, isLoading: false })
-    })
-  }
-
-  setFormValue = (key, value) => {
-    this.setState({
-      [key]: value
-    })
-  }
-
-  onSubmit = async () => {
-    if (!this.state.pendingWebhookURL) {
-      this.toggleSnackbar(
-        true,
-        'error',
-        'Missing webhook URL',
-        `Please provide a valid webhook URL before continuing`
-      )
-      return
-    }
-
+  const onSubmit = async () => {
     // If we have a team slug, we'll have to get the associated teamId to include in every new request
     // Docs: https://vercel.com/docs/api#api-basics/authentication/accessing-resources-owned-by-a-team
-    let vercelTeamId
+    let vercelTeamID
     let vercelTeamName
+    setIsSubmitting(true)
 
-    if (this.state.pendingVercelTeam) {
+    if (pendingDeploy.team) {
       try {
-        const teamRes = await axios.get(
-          `https://api.vercel.com/v1/teams?slug=${this.state.pendingVercelTeam}`,
+        const fetchTeam = await axios.get(
+          `https://api.vercel.com/v1/teams?slug=${pendingDeploy.team}`,
           {
             headers: {
-              Authorization: `Bearer ${this.state.pendingVercelToken}`
+              Authorization: `Bearer ${pendingDeploy.token}`
             }
           }
         )
-        if (!teamRes?.data?.id) {
-          throw 'No team id found'
+
+        if (!fetchTeam?.data?.id) {
+          throw new Error('No team id found')
         }
-        console.log(teamRes)
-        vercelTeamId = teamRes.data.id
-        vercelTeamName = teamRes.data.name
+
+        vercelTeamID = fetchTeam.data.id
+        vercelTeamName = fetchTeam.data.name
       } catch (error) {
         console.error(error)
-        this.toggleSnackbar(
-          true,
-          'error',
-          'No team found',
-          `Make sure the token you provided is valid and that the team's slug correspond to the one you see in Vercel`
-        )
+        setIsSubmitting(false)
+
+        toast.push({
+          status: 'error',
+          title: 'No Team found!',
+          closable: true,
+          description:
+            'Make sure the token you provided is valid and that the team’s slug correspond to the one you see in Vercel'
+        })
+
         return
       }
     }
@@ -136,300 +91,326 @@ export default class Deploy extends React.Component {
     client
       .create({
         // Explicitly define an _id inside the vercel-deploy path to make sure it's not publicly accessible
-        // This will protect users' tokens & project info. Read nmore: https://www.sanity.io/docs/ids
+        // This will protect users' tokens & project info. Read more: https://www.sanity.io/docs/ids
         _id: `vercel-deploy.${nanoid()}`,
         _type: WEBHOOK_TYPE,
-        name: this.state.pendingWebhookTitle,
-        url: this.state.pendingWebhookURL,
-        vercelProject: this.state.pendingVercelProject,
+        name: pendingDeploy.title,
+        url: pendingDeploy.url,
+        vercelProject: pendingDeploy.project,
         vercelTeam: {
-          slug: this.state.pendingVercelTeam || undefined,
+          slug: pendingDeploy.team || undefined,
           name: vercelTeamName || undefined,
-          id: vercelTeamId || undefined
+          id: vercelTeamID || undefined
         },
-        vercelToken: this.state.pendingVercelToken
+        vercelToken: pendingDeploy.token
       })
       .then(() => {
-        this.toggleSnackbar(
-          true,
-          'success',
-          'Success!',
-          `Created Deployment: ${this.state.pendingWebhookTitle}`
-        )
-        this.setState({
-          pendingWebhookTitle: '',
-          pendingWebhookURL: '',
-          pendingVercelProject: '',
-          pendingVercelTeam: '',
-          pendingVercelToken: '',
-          openDialog: false
+        toast.push({
+          status: 'success',
+          title: 'Success!',
+          description: `Created Deployment: ${pendingDeploy.title}`
         })
+        setIsFormOpen(false)
+        setIsSubmitting(false)
+        setpendingDeploy(initialDeploy) // Reset the pending webhook state
       })
   }
 
-  toggleDialog = state => {
-    this.setState({
-      openDialog: state
+  // Fetch all existing webhooks and listen for newly created
+  useEffect(() => {
+    let webhookSubscription
+
+    client.fetch(WEBHOOK_QUERY).then(w => {
+      setDeploys(w)
+      setIsLoading(false)
+
+      webhookSubscription = client
+        .listen(WEBHOOK_QUERY, {}, { includeResult: true })
+        .subscribe(res => {
+          const wasCreated = res.mutations.some(item =>
+            Object.prototype.hasOwnProperty.call(item, 'create')
+          )
+          const wasDeleted = res.mutations.some(item =>
+            Object.prototype.hasOwnProperty.call(item, 'delete')
+          )
+          if (wasCreated) {
+            setDeploys(prevState => {
+              return [...prevState, res.result]
+            })
+          }
+          if (wasDeleted) {
+            setDeploys(prevState =>
+              prevState.filter(w => w._id !== res.documentId)
+            )
+          }
+        })
     })
-  }
 
-  handleAction = (action, event) => {
-    if (action.key === 'create') {
-      this.onSubmit()
-    } else {
-      this.setState({
-        openDialog: false
-      })
+    return () => {
+      webhookSubscription && webhookSubscription.unsubscribe()
     }
-  }
+  }, [])
 
-  toggleSnackbar = (state, kind, title, message) => {
-    this.setState({
-      snackbar: {
-        active: state,
-        kind: kind,
-        title: title,
-        message: message
-      }
-    })
-  }
+  return (
+    <ThemeProvider theme={studioTheme}>
+      <ToastProvider>
+        <div className={styles.appContainer}>
+          <div className={styles.container}>
+            <div className={styles.header}>
+              <h2 className={styles.title}>
+                <svg
+                  fill="currentColor"
+                  viewBox="0 0 512 512"
+                  height="1em"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={styles.titleIcon}
+                >
+                  <path d="M256 48l240 416H16z" />
+                </svg>{' '}
+                Vercel Deployments
+              </h2>
+            </div>
+            <div className={styles.list}>
+              {isLoading ? (
+                <div className={styles.loader}>
+                  <Flex direction="column" align="center" justify="center">
+                    <Spinner size={4} />
+                    <Box padding={4}>
+                      <Text size={2}>loading deployments...</Text>
+                    </Box>
+                  </Flex>
+                </div>
+              ) : deploys.length ? (
+                deploys.map(deploy => (
+                  <DeployItem
+                    key={deploy._id}
+                    name={deploy.name}
+                    url={deploy.url}
+                    id={deploy._id}
+                    vercelProject={deploy.vercelProject}
+                    vercelTeam={deploy.vercelTeam}
+                    vercelToken={deploy.vercelToken}
+                  />
+                ))
+              ) : (
+                <EmptyState />
+              )}
+            </div>
 
-  resetSnackbar = () => {
-    this.setState({
-      snackbar: { active: false }
-    })
-  }
-
-  render() {
-    const webhookList = this.state.webhooks.map(hook => (
-      <DeployItem
-        key={hook._id}
-        name={hook.name}
-        url={hook.url}
-        id={hook._id}
-        vercelProject={hook.vercelProject}
-        vercelTeam={hook.vercelTeam}
-        vercelToken={hook.vercelToken}
-        toggleSnackbar={this.toggleSnackbar}
-      />
-    ))
-
-    const actions = [
-      {
-        key: 'create',
-        index: 1,
-        title: 'Create',
-        color: 'primary'
-      },
-      {
-        key: 'cancel',
-        index: 2,
-        title: 'Cancel',
-        color: 'primary',
-        kind: 'simple',
-        secondary: true
-      }
-    ]
-
-    const webhookForm = (
-      <>
-        {this.state.openDialog && (
-          <DefaultDialog
-            title="New Deployment"
-            color="default"
-            size="medium"
-            padding="large"
-            showCloseButton
-            onClose={() => this.toggleDialog(false)}
-            onAction={this.handleAction}
-            actions={
-              this.state.pendingWebhookTitle &&
-              this.state.pendingVercelProject &&
-              this.state.pendingWebhookURL &&
-              this.state.pendingVercelToken
-                ? actions
-                : [actions[1]]
-            }
-          >
-            <form>
-              <div className={styles.fieldWrapper}>
-                <DefaultTextField
-                  label="Title"
-                  description="Give your deploy a name, like 'Production'"
-                  onChange={event =>
-                    this.setFormValue('pendingWebhookTitle', event.target.value)
-                  }
-                  value={this.state.pendingWebhookTitle}
-                />
-                <DefaultTextField
-                  label="Vercel Project Name"
-                  description="The exact name of the associated project on Vercel"
-                  onChange={event =>
-                    this.setFormValue(
-                      'pendingVercelProject',
-                      event.target.value
-                    )
-                  }
-                  value={this.state.pendingVercelProject}
-                />
-                <DefaultTextField
-                  label="Vercel Team Slug"
-                  description="Required for projects under a Vercel Team (use team page URL slug)"
-                  onChange={event =>
-                    this.setFormValue('pendingVercelTeam', event.target.value)
-                  }
-                  value={this.state.pendingVercelTeam}
-                />
-                <DefaultTextField
-                  label="Deploy Hook URL"
-                  description="The Vercel deploy hook URL from your project's Git settings"
-                  type="url"
-                  onChange={event =>
-                    this.setFormValue('pendingWebhookURL', event.target.value)
-                  }
-                  value={this.state.pendingWebhookURL}
-                />
-                <DefaultTextField
-                  label="Vercel Token"
-                  description="A Vercel token from your account settings"
-                  onChange={event =>
-                    this.setFormValue('pendingVercelToken', event.target.value)
-                  }
-                  value={this.state.pendingVercelToken}
-                />
-
-                <Alert color="warning" icon={WarningIcon} title="Careful!">
-                  Once you create this deployment you will not be able to edit
-                  it.
-                </Alert>
-              </div>
-            </form>
-          </DefaultDialog>
-        )}
-      </>
-    )
-
-    const emptyState = !this.state.webhooks.length && (
-      <>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          width="360"
-          viewBox="0 0 260 235"
-          className={styles.emptyIcon}
-        >
-          <path
-            fill="white"
-            fillRule="evenodd"
-            stroke="black"
-            strokeDasharray="4 4"
-            strokeWidth="2"
-            d="M107.36 2.48l105.7 185.47H2.66L108.35 2.48z"
-            clipRule="evenodd"
-          />
-          <ellipse cx="182.68" cy="156.48" fill="white" rx="74.32" ry="74.52" />
-          <path
-            stroke="black"
-            strokeWidth="2"
-            d="M256.5 156.48c0 40.88-33.05 74.02-73.82 74.02-40.77 0-73.83-33.14-73.83-74.02 0-40.87 33.06-74.01 73.83-74.01 40.77 0 73.82 33.14 73.82 74.01z"
-          />
-
-          <mask
-            id="a"
-            width="149"
-            height="150"
-            x="108"
-            y="81"
-            maskUnits="userSpaceOnUse"
-          >
-            <ellipse
-              cx="182.68"
-              cy="156.48"
-              fill="#fff"
-              rx="74.32"
-              ry="74.52"
-            />
-          </mask>
-          <g mask="url(#a)">
-            <path
-              fill="black"
-              fillRule="evenodd"
-              d="M108.36 2.48l105.7 185.47H2.66L108.35 2.48z"
-              clipRule="evenodd"
-            />
-          </g>
-        </svg>
-        <p className={styles.emptyList}>
-          No deploys created yet.{' '}
-          <a
-            className={styles.emptyHelpLink}
-            href="https://github.com/ndimatteo/sanity-plugin-vercel-deploy/blob/master/README.md"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Need help?
-          </a>
-        </p>
-      </>
-    )
-
-    return (
-      <div className={styles.appContainer}>
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <h2 className={styles.title}>
-              <svg
-                fill="currentColor"
-                viewBox="0 0 512 512"
-                height="1em"
-                width="1em"
-                xmlns="http://www.w3.org/2000/svg"
-                className={styles.titleIcon}
+            <div className={styles.footer}>
+              <AnchorButton
+                onClick={() => setIsFormOpen(true)}
+                bleed
+                color="primary"
+                kind="simple"
               >
-                <path d="M256 48l240 416H16z" />
-              </svg>{' '}
-              Vercel Deployments
-            </h2>
-          </div>
-          <div className={styles.list}>
-            {this.state.isLoading ? (
-              <div className={styles.loader}>
-                <Spinner center message="loading deployments..." />
-              </div>
-            ) : (
-              <>
-                {webhookList}
-                {emptyState}
-              </>
-            )}
-          </div>
-          <div className={styles.footer}>
-            <AnchorButton
-              onClick={() => this.toggleDialog(true)}
-              bleed
-              color="primary"
-              kind="simple"
-            >
-              Create New
-            </AnchorButton>
+                Create New
+              </AnchorButton>
+            </div>
           </div>
         </div>
-        {webhookForm}
 
-        {this.state.snackbar.active && (
-          <Snackbar
-            kind={this.state.snackbar.kind}
-            isPersisted={false}
-            isCloseable
-            timeout={4000}
-            title={this.state.snackbar.title}
-            allowDuplicateSnackbarType
-            onClose={this.resetSnackbar}
+        {isFormOpen && (
+          <Dialog
+            header="New Deployment"
+            id="create-webhook"
+            width={1}
+            onClickOutside={() => setIsFormOpen(false)}
+            onClose={() => setIsFormOpen(false)}
+            footer={
+              <Box padding={3}>
+                <Grid columns={2} gap={3}>
+                  <Button
+                    padding={4}
+                    mode="ghost"
+                    text="Cancel"
+                    onClick={() => setIsFormOpen(false)}
+                  />
+                  <Button
+                    padding={4}
+                    text="Publish"
+                    tone="primary"
+                    loading={isSubmitting}
+                    onClick={() => onSubmit()}
+                    disabled={
+                      isSubmitting ||
+                      !pendingDeploy.project ||
+                      !pendingDeploy.url ||
+                      !pendingDeploy.token
+                    }
+                  />
+                </Grid>
+              </Box>
+            }
           >
-            {this.state.snackbar.message}
-          </Snackbar>
+            <Box padding={4}>
+              <Stack space={4}>
+                <FormField
+                  label="Display Title"
+                  description="Give your deploy a name, like 'Production'"
+                >
+                  <TextInput
+                    type="text"
+                    value={pendingDeploy.title}
+                    onChange={e => {
+                      e.persist()
+                      setpendingDeploy(prevState => ({
+                        ...prevState,
+                        ...{ title: e?.target?.value }
+                      }))
+                    }}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Vercel Project Name"
+                  description="The exact name of the associated project on Vercel"
+                >
+                  <TextInput
+                    type="text"
+                    value={pendingDeploy.project}
+                    onChange={e => {
+                      e.persist()
+                      setpendingDeploy(prevState => ({
+                        ...prevState,
+                        ...{ project: e?.target?.value }
+                      }))
+                    }}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Vercel Team Slug"
+                  description="Required for projects under a Vercel Team (use team page URL slug)"
+                >
+                  <TextInput
+                    type="text"
+                    value={pendingDeploy.team}
+                    onChange={e => {
+                      e.persist()
+                      setpendingDeploy(prevState => ({
+                        ...prevState,
+                        ...{ team: e?.target?.value }
+                      }))
+                    }}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Deploy Hook URL"
+                  description="The Vercel deploy hook URL from your project's Git settings"
+                >
+                  <TextInput
+                    type="text"
+                    inputMode="url"
+                    value={pendingDeploy.url}
+                    onChange={e => {
+                      e.persist()
+                      setpendingDeploy(prevState => ({
+                        ...prevState,
+                        ...{ url: e?.target?.value }
+                      }))
+                    }}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Vercel Token"
+                  description="A Vercel token from your account settings"
+                >
+                  <TextInput
+                    type="text"
+                    value={pendingDeploy.token}
+                    onChange={e => {
+                      e.persist()
+                      setpendingDeploy(prevState => ({
+                        ...prevState,
+                        ...{ token: e?.target?.value }
+                      }))
+                    }}
+                  />
+                </FormField>
+
+                <Card padding={[3, 3, 4]} radius={3} shadow={1} tone="caution">
+                  <Box marginBottom={3}>
+                    <Inline space={[1]}>
+                      <WarningIcon style={{ fontSize: 24 }} />
+                      <Heading size={1}>Careful!</Heading>
+                    </Inline>
+                  </Box>
+                  <Text size={[1, 1, 1]}>
+                    Once you create this deployment you will not be able to edit
+                    it.
+                  </Text>
+                </Card>
+              </Stack>
+            </Box>
+          </Dialog>
         )}
-      </div>
-    )
-  }
+      </ToastProvider>
+    </ThemeProvider>
+  )
 }
+
+const EmptyState = () => {
+  return (
+    <>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        width="360"
+        viewBox="0 0 260 235"
+        className={styles.emptyIcon}
+      >
+        <path
+          fill="white"
+          fillRule="evenodd"
+          stroke="black"
+          strokeDasharray="4 4"
+          strokeWidth="2"
+          d="M107.36 2.48l105.7 185.47H2.66L108.35 2.48z"
+          clipRule="evenodd"
+        />
+        <ellipse cx="182.68" cy="156.48" fill="white" rx="74.32" ry="74.52" />
+        <path
+          stroke="black"
+          strokeWidth="2"
+          d="M256.5 156.48c0 40.88-33.05 74.02-73.82 74.02-40.77 0-73.83-33.14-73.83-74.02 0-40.87 33.06-74.01 73.83-74.01 40.77 0 73.82 33.14 73.82 74.01z"
+        />
+
+        <mask
+          id="a"
+          width="149"
+          height="150"
+          x="108"
+          y="81"
+          maskUnits="userSpaceOnUse"
+        >
+          <ellipse cx="182.68" cy="156.48" fill="#fff" rx="74.32" ry="74.52" />
+        </mask>
+        <g mask="url(#a)">
+          <path
+            fill="black"
+            fillRule="evenodd"
+            d="M108.36 2.48l105.7 185.47H2.66L108.35 2.48z"
+            clipRule="evenodd"
+          />
+        </g>
+      </svg>
+      <p className={styles.emptyList}>
+        No deploys created yet.{' '}
+        <a
+          className={styles.emptyHelpLink}
+          href="https://github.com/ndimatteo/sanity-plugin-vercel-deploy#your-first-vercel-deployment"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Need help?
+        </a>
+      </p>
+    </>
+  )
+}
+
+export default VercelDeploy
