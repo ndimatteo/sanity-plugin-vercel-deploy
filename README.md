@@ -26,9 +26,7 @@ sanity install @sanity/dashboard
 ## Your first Vercel Deployment
 Once installed, you should see a new "Deploy" tool in your Sanity Studio navbar.
 
-Create a new deployment by clicking `Create New`:
-
-![vercel-create-deploy](https://user-images.githubusercontent.com/737188/101733617-275ae480-3a8d-11eb-9ce7-3e091be62779.png)
+Create a new deployment by clicking `Create New`.
 
 Next, you'll be prompted to add the following:
 
