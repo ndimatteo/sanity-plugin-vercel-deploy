@@ -3,12 +3,12 @@ import { Flex, Box } from '@sanity/ui'
 
 import styles from './deploy-status.css'
 
-const DeployStatus = ({ status, children }) => {
+const DeployStatus = ({ status, justify, children }) => {
   return (
     <Flex
       wrap="nowrap"
       align="center"
-      justify="flex-end"
+      justify={justify}
       className={styles.hookStatusIndicator}
       data-indicator={status}
     >

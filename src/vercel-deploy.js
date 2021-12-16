@@ -158,7 +158,7 @@ const VercelDeploy = () => {
         <Container display="grid" width={6} style={{ minHeight: '100%' }}>
           <Flex direction="column">
             <Card padding={4} borderBottom>
-              <Flex>
+              <Flex align="center">
                 <Flex flex={1} align="center">
                   <Card>
                     <svg

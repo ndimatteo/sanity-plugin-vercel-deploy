@@ -214,7 +214,7 @@ const deployItem = ({
   return (
     <>
       <Flex align="center">
-        <Box flex={1} paddingBottom={1}>
+        <Box flex={1} paddingBottom={1} overflow="hidden">
           <Stack space={2}>
             <Inline space={2}>
               <Heading as="h2" size={1}>
@@ -241,15 +241,25 @@ const deployItem = ({
                 </Badge>
               )}
             </Inline>
-            <Code size={1}>{url}</Code>
+            <Code size={1}>
+              <Box
+                style={{
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+              >
+                {url}
+              </Box>
+            </Code>
           </Stack>
         </Box>
-        <Flex wrap="nowrap" align="center">
+        <Flex wrap="nowrap" align="center" marginLeft={3}>
           <Inline space={2}>
             {vercelToken && vercelProject && (
               <Box marginRight={2}>
                 <Stack space={2}>
-                  <DeployStatus status={status}>
+                  <DeployStatus status={status} justify="flex-end">
                     {errorMessage && (
                       <Box marginLeft={2}>
                         <Tooltip
