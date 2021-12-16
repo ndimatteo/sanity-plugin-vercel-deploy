@@ -214,7 +214,7 @@ const deployItem = ({
   return (
     <>
       <Flex align="center">
-        <Box flex={1} paddingBottom={1} overflow="hidden">
+        <Box flex={1} paddingBottom={1}>
           <Stack space={2}>
             <Inline space={2}>
               <Heading as="h2" size={1}>
@@ -254,7 +254,7 @@ const deployItem = ({
             </Code>
           </Stack>
         </Box>
-        <Flex wrap="nowrap" align="center" marginLeft={3}>
+        <Flex wrap="nowrap" align="center" marginLeft={4}>
           <Inline space={2}>
             {vercelToken && vercelProject && (
               <Box marginRight={2}>
