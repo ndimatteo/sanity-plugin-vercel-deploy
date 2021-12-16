@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import useSWR from 'swr'
 import spacetime from 'spacetime'
 
-import { Avatar, Box, Card, Flex, Spinner, Text, Tooltip } from '@sanity/ui'
+import {
+  Avatar,
+  Box,
+  Card,
+  Flex,
+  Inline,
+  Label,
+  Spinner,
+  Stack,
+  Text,
+  Tooltip
+} from '@sanity/ui'
+import { TransferIcon } from '@sanity/icons'
 
-import styles from './deploy-history.css'
 import DeployStatus from './deploy-status'
 
 const DeployHistory = ({
@@ -53,16 +63,19 @@ const DeployHistory = ({
 
   if (state.loading) {
     return (
-      <Flex align="center" justify="center">
-        <Spinner muted />
+      <Flex direction="column" align="center" justify="center" paddingTop={3}>
+        <Spinner size={4} />
+        <Box padding={4}>
+          <Text size={2}>loading deployment history...</Text>
+        </Box>
       </Flex>
     )
   }
 
   if (state.error) {
     return (
-      <Card padding={[3, 3, 4]} radius={2} shadow={1} tone="critical">
-        <Text size={[2, 2, 3]}>
+      <Card padding={4} radius={2} shadow={1} tone="critical">
+        <Text size={2} align="center">
           Could not load deployments for {vercelProject}
         </Text>
       </Card>
@@ -70,59 +83,101 @@ const DeployHistory = ({
   }
 
   return (
-    <Box as="table" className={styles.table}>
-      <Box as="thead" style={{ display: 'table-header-group' }}>
-        <tr>
-          <th>Deployment</th>
-          <th>State</th>
-          <th>Commit</th>
-          <th>Time</th>
-          <th>Creator</th>
-        </tr>
-      </Box>
-      <Box as="tbody" style={{ display: 'table-row-group' }}>
-        {state.deployments?.map(deployment => (
-          <tr as="tr" key={deployment.uid}>
-            <td>
-              <a href={`https://${deployment.url}`} target="_blank">
-                {deployment.url}
-              </a>
-            </td>
-            <td>
-              <DeployStatus status={deployment.state} />
-            </td>
-            <td>
-              <div>{deployment.meta?.githubCommitRef}</div>
-              <small className={styles.commit}>
-                {deployment.meta?.githubCommitMessage}
-              </small>
-            </td>
-            <td>
-              {spacetime.now().since(spacetime(deployment.created)).rounded}
-            </td>
-            <td>
-              <Tooltip
-                content={
-                  <Box padding={2}>
-                    <Text muted size={1}>
-                      {deployment.creator?.username}
-                    </Text>
+    <Box as={'ul'} padding={0}>
+      <Card as={'li'} padding={4} borderBottom>
+        <Flex>
+          <Box flex={3}>
+            <Label muted>Preview URL</Label>
+          </Box>
+          <Box flex={1} marginLeft={2}>
+            <Label muted>State</Label>
+          </Box>
+          <Box flex={3} marginLeft={2} style={{ maxWidth: '40%' }}>
+            <Label muted>Commit</Label>
+          </Box>
+          <Box flex={2} marginLeft={2}>
+            <Label align="right" muted>
+              Deployed At
+            </Label>
+          </Box>
+        </Flex>
+      </Card>
+
+      {state.deployments?.map(deployment => (
+        <Card key={deployment.uid} as={'li'} padding={4} borderBottom>
+          <Flex align="center">
+            <Box flex={3}>
+              <Text weight="semibold">
+                <Box
+                  style={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  <a
+                    href={`https://${deployment.url}`}
+                    target="_blank"
+                    style={{ color: 'inherit' }}
+                  >
+                    {deployment.url}
+                  </a>
+                </Box>
+              </Text>
+            </Box>
+            <Box flex={1} marginLeft={2}>
+              <Text>
+                <DeployStatus status={deployment.state} />
+              </Text>
+            </Box>
+            <Box flex={3} marginLeft={2} style={{ maxWidth: '40%' }}>
+              <Stack space={2}>
+                <Text>
+                  <Box
+                    style={{
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {deployment.meta?.githubCommitMessage}
                   </Box>
-                }
-                fallbackPlacements={['right', 'left']}
-                placement="top"
-              >
-                <Avatar
-                  alt={deployment.creator?.username}
-                  src={`https://vercel.com/api/www/avatar/${deployment.creator?.uid}?&s=48`}
-                  size={1}
-                  style={{ margin: 'auto' }}
-                />
-              </Tooltip>
-            </td>
-          </tr>
-        ))}
-      </Box>
+                </Text>
+                <Text size={1} muted>
+                  <Inline space={2}>
+                    <TransferIcon />
+                    {deployment.meta?.githubCommitRef}
+                  </Inline>
+                </Text>
+              </Stack>
+            </Box>
+            <Flex flex={2} justify="right" marginLeft={2}>
+              <Inline space={2}>
+                <Text style={{ whiteSpace: 'nowrap' }} muted>
+                  {spacetime.now().since(spacetime(deployment.created)).rounded}
+                </Text>
+                <Tooltip
+                  content={
+                    <Box padding={2}>
+                      <Text muted size={1}>
+                        {deployment.creator?.username}
+                      </Text>
+                    </Box>
+                  }
+                  fallbackPlacements={['right', 'left']}
+                  placement="top"
+                >
+                  <Avatar
+                    alt={deployment.creator?.username}
+                    src={`https://vercel.com/api/www/avatar/${deployment.creator?.uid}?&s=48`}
+                    size={1}
+                  />
+                </Tooltip>
+              </Inline>
+            </Flex>
+          </Flex>
+        </Card>
+      ))}
     </Box>
   )
 }

@@ -8,10 +8,11 @@ const DeployStatus = ({ status, children }) => {
     <Flex
       wrap="nowrap"
       align="center"
+      justify="flex-end"
       className={styles.hookStatusIndicator}
       data-indicator={status}
     >
-      <Box marginX={2}>{titleCase(status)}</Box>
+      <Box marginLeft={2}>{titleCase(status)}</Box>
       {children}
     </Flex>
   )

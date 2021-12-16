@@ -59,7 +59,7 @@ const deployItem = ({
 
   const { data: projectData } = useSWR(
     [
-      `https://api.vercel.com/v1/projects/${vercelProject}${
+      `https://api.vercel.com/v8/projects/${vercelProject}${
         vercelTeam?.id ? `?teamId=${vercelTeam?.id}` : ''
       }`,
       vercelToken
@@ -126,7 +126,7 @@ const deployItem = ({
   const onCancel = (id, token) => {
     setIsLoading(true)
     axios
-      .patch(`https://api.vercel.com/v12/now/deployments/${id}/cancel`, null, {
+      .patch(`https://api.vercel.com/v12/deployments/${id}/cancel`, null, {
         headers: {
           'content-type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -251,20 +251,22 @@ const deployItem = ({
                 <Stack space={2}>
                   <DeployStatus status={status}>
                     {errorMessage && (
-                      <Tooltip
-                        content={
-                          <Box padding={2}>
-                            <Text muted size={1}>
-                              {errorMessage}
-                            </Text>
-                          </Box>
-                        }
-                        placement="top"
-                      >
-                        <Badge mode="outline" tone="critical">
-                          ?
-                        </Badge>
-                      </Tooltip>
+                      <Box marginLeft={2}>
+                        <Tooltip
+                          content={
+                            <Box padding={2}>
+                              <Text muted size={1}>
+                                {errorMessage}
+                              </Text>
+                            </Box>
+                          }
+                          placement="top"
+                        >
+                          <Badge mode="outline" tone="critical">
+                            ?
+                          </Badge>
+                        </Tooltip>
+                      </Box>
                     )}
                   </DeployStatus>
 
@@ -334,20 +336,19 @@ const deployItem = ({
 
       {isHistoryOpen && (
         <Dialog
-          header={`Deployment History: ${name} (${deploymentData?.deployments[0]?.meta.deployHookName})`}
+          id="deploy-history"
+          header={`Deployment History: ${name}`}
           onClickOutside={() => setIsHistoryOpen(false)}
           onClose={() => setIsHistoryOpen(false)}
           width={2}
         >
-          <Box padding={4}>
-            <DeployHistory
-              url={url}
-              vercelProject={projectData.id}
-              vercelToken={vercelToken}
-              vercelTeam={vercelTeam}
-              hookContext={deploymentData?.deployments[0]?.meta.deployHookName}
-            />
-          </Box>
+          <DeployHistory
+            url={url}
+            vercelProject={projectData.id}
+            vercelToken={vercelToken}
+            vercelTeam={vercelTeam}
+            hookContext={deploymentData?.deployments[0]?.meta.deployHookName}
+          />
         </Dialog>
       )}
     </>
