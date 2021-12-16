@@ -7,21 +7,24 @@ import sanityClient from 'part:@sanity/base/client'
 
 import {
   useToast,
-  Menu,
-  MenuButton,
-  MenuItem,
   Badge,
   Box,
   Button,
+  Code,
+  Dialog,
+  Flex,
+  Heading,
   Inline,
+  Menu,
+  MenuButton,
+  MenuItem,
+  Stack,
   Text,
-  Tooltip,
-  Dialog
+  Tooltip
 } from '@sanity/ui'
 import { EllipsisVerticalIcon, ClockIcon, TrashIcon } from '@sanity/icons'
 
-import styles from './deploy-item.css'
-import StatusIndicator from './deploy-status'
+import DeployStatus from './deploy-status'
 import DeployHistory from './deploy-history'
 
 const fetcher = (url, token) =>
@@ -210,70 +213,82 @@ const deployItem = ({
 
   return (
     <>
-      <div className={styles.hook}>
-        <div className={styles.hookDetails}>
-          <h4 className={styles.hookTitle}>
-            <span>{name}</span>
-            <Badge>{vercelProject}</Badge>
-
-            {vercelTeam?.id && (
-              <>
-                {' '}
-                <Badge tone="primary">{vercelTeam?.name}</Badge>
-              </>
-            )}
-          </h4>
-          <p className={styles.hookURL}>{url}</p>
-        </div>
-        <div className={styles.hookActions}>
-          {vercelToken && vercelProject && (
-            <div className={styles.hookStatus}>
-              <StatusIndicator status={status}>
-                {errorMessage && (
-                  <Tooltip
-                    content={
-                      <Box padding={2}>
-                        <Text muted size={1}>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              textAlign: 'center'
-                            }}
-                          >
-                            {errorMessage}
-                          </span>
-                        </Text>
-                      </Box>
-                    }
-                    placement="top"
-                  >
-                    <span className={styles.hookStatusError}>
-                      <Badge mode="outline" tone="critical">
-                        ?
-                      </Badge>
-                    </span>
-                  </Tooltip>
-                )}
-              </StatusIndicator>
-
-              <span className={styles.hookTime}>
-                {isDeploying
-                  ? buildTime || '--'
-                  : timestamp
-                  ? spacetime.now().since(spacetime(timestamp)).rounded
-                  : '--'}
-              </span>
-            </div>
-          )}
+      <Flex align="center">
+        <Box flex={1} paddingBottom={1}>
+          <Stack space={2}>
+            <Inline space={2}>
+              <Heading as="h2" size={1}>
+                <Text weight="semibold">{name}</Text>
+              </Heading>
+              <Badge
+                tone="primary"
+                paddingX={3}
+                paddingY={2}
+                radius={6}
+                fontSize={0}
+              >
+                {vercelProject}
+              </Badge>
+              {vercelTeam?.id && (
+                <Badge
+                  mode="outline"
+                  paddingX={3}
+                  paddingY={2}
+                  radius={6}
+                  fontSize={0}
+                >
+                  {vercelTeam?.name}
+                </Badge>
+              )}
+            </Inline>
+            <Code size={1}>{url}</Code>
+          </Stack>
+        </Box>
+        <Flex wrap="nowrap" align="center">
           <Inline space={2}>
+            {vercelToken && vercelProject && (
+              <Box marginRight={2}>
+                <Stack space={2}>
+                  <DeployStatus status={status}>
+                    {errorMessage && (
+                      <Tooltip
+                        content={
+                          <Box padding={2}>
+                            <Text muted size={1}>
+                              {errorMessage}
+                            </Text>
+                          </Box>
+                        }
+                        placement="top"
+                      >
+                        <Badge mode="outline" tone="critical">
+                          ?
+                        </Badge>
+                      </Tooltip>
+                    )}
+                  </DeployStatus>
+
+                  <Text align="right" size={1} muted>
+                    {isDeploying
+                      ? buildTime || '--'
+                      : timestamp
+                      ? spacetime.now().since(spacetime(timestamp)).rounded
+                      : '--'}
+                  </Text>
+                </Stack>
+              </Box>
+            )}
+
             <Button
               type="button"
               tone="positive"
               disabled={isDeploying || isLoading}
               loading={isDeploying || isLoading}
               onClick={() => onDeploy(name, url)}
+              radius={3}
               text="Deploy"
             />
+
             {isDeploying && (status === 'BUILDING' || status === 'QUEUED') && (
               <Button
                 type="button"
@@ -281,9 +296,11 @@ const deployItem = ({
                 onClick={() =>
                   onCancel(deploymentData.deployments[0].uid, vercelToken)
                 }
+                radius={3}
                 text="Cancel"
               />
             )}
+
             <MenuButton
               button={
                 <Button
@@ -309,11 +326,11 @@ const deployItem = ({
                   />
                 </Menu>
               }
-              placement="bottom"
+              placement="bottom-end"
             />
           </Inline>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {isHistoryOpen && (
         <Dialog

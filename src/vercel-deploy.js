@@ -3,14 +3,15 @@ import { nanoid } from 'nanoid'
 import axios from 'axios'
 
 import sanityClient from 'part:@sanity/base/client'
-import AnchorButton from 'part:@sanity/components/buttons/anchor'
-import FormField from 'part:@sanity/components/formfields/default'
-import WarningIcon from 'part:@sanity/base/warning-icon'
+
+import { FormField } from '@sanity/base/components'
+
 import {
   studioTheme,
   ThemeProvider,
   ToastProvider,
   useToast,
+  Container,
   Dialog,
   Grid,
   Flex,
@@ -24,8 +25,8 @@ import {
   Heading,
   TextInput
 } from '@sanity/ui'
+import { WarningOutlineIcon } from '@sanity/icons'
 
-import styles from './vercel-deploy.css'
 import DeployItem from './deploy-item'
 
 const initialDeploy = {
@@ -154,66 +155,180 @@ const VercelDeploy = () => {
   return (
     <ThemeProvider theme={studioTheme}>
       <ToastProvider>
-        <div className={styles.appContainer}>
-          <div className={styles.container}>
-            <div className={styles.header}>
-              <h2 className={styles.title}>
-                <svg
-                  fill="currentColor"
-                  viewBox="0 0 512 512"
-                  height="1em"
-                  width="1em"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={styles.titleIcon}
-                >
-                  <path d="M256 48l240 416H16z" />
-                </svg>{' '}
-                Vercel Deployments
-              </h2>
-            </div>
-            <div className={styles.list}>
-              {isLoading ? (
-                <div className={styles.loader}>
-                  <Flex direction="column" align="center" justify="center">
-                    <Spinner size={4} />
-                    <Box padding={4}>
-                      <Text size={2}>loading deployments...</Text>
-                    </Box>
-                  </Flex>
-                </div>
-              ) : deploys.length ? (
-                deploys.map(deploy => (
-                  <DeployItem
-                    key={deploy._id}
-                    name={deploy.name}
-                    url={deploy.url}
-                    id={deploy._id}
-                    vercelProject={deploy.vercelProject}
-                    vercelTeam={deploy.vercelTeam}
-                    vercelToken={deploy.vercelToken}
+        <Container display="grid" width={6} style={{ minHeight: '100%' }}>
+          <Flex direction="column">
+            <Card padding={4} borderBottom>
+              <Flex>
+                <Flex flex={1} align="center">
+                  <Card>
+                    <svg
+                      fill="currentColor"
+                      viewBox="0 0 512 512"
+                      height="2rem"
+                      width="2rem"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M256 48l240 416H16z" />
+                    </svg>
+                  </Card>
+                  <Card marginX={1} style={{ opacity: 0.15 }}>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="32"
+                      height="32"
+                      stroke="currentColor"
+                      stroke-width="1"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      fill="none"
+                      shape-rendering="geometricPrecision"
+                    >
+                      <path d="M16.88 3.549L7.12 20.451"></path>
+                    </svg>
+                  </Card>
+                  <Card>
+                    <Text as="h1" size={2} weight="semibold">
+                      Vercel Deployments
+                    </Text>
+                  </Card>
+                </Flex>
+                <Box>
+                  <Button
+                    type="button"
+                    fontSize={2}
+                    tone="primary"
+                    padding={3}
+                    radius={3}
+                    text="Add Project"
+                    onClick={() => setIsFormOpen(true)}
                   />
-                ))
-              ) : (
-                <EmptyState />
-              )}
-            </div>
+                </Box>
+              </Flex>
+            </Card>
 
-            <div className={styles.footer}>
-              <AnchorButton
-                onClick={() => setIsFormOpen(true)}
-                bleed
-                color="primary"
-                kind="simple"
-              >
-                Create New
-              </AnchorButton>
-            </div>
-          </div>
-        </div>
+            <Card flex={1}>
+              <Stack as={'ul'}>
+                {isLoading ? (
+                  <Card as={'li'} padding={4}>
+                    <Flex
+                      direction="column"
+                      align="center"
+                      justify="center"
+                      paddingTop={3}
+                    >
+                      <Spinner size={4} />
+                      <Box padding={4}>
+                        <Text size={2}>loading your deployments...</Text>
+                      </Box>
+                    </Flex>
+                  </Card>
+                ) : deploys.length ? (
+                  deploys.map(deploy => (
+                    <Card key={deploy._id} as={'li'} padding={4} borderBottom>
+                      <DeployItem
+                        key={deploy._id}
+                        name={deploy.name}
+                        url={deploy.url}
+                        id={deploy._id}
+                        vercelProject={deploy.vercelProject}
+                        vercelTeam={deploy.vercelTeam}
+                        vercelToken={deploy.vercelToken}
+                      />
+                    </Card>
+                  ))
+                ) : (
+                  <Card as={'li'} padding={5} paddingTop={6}>
+                    <Flex direction="column" align="center" justify="center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        width="150"
+                        viewBox="0 0 260 235"
+                      >
+                        <path
+                          fill="white"
+                          fillRule="evenodd"
+                          stroke="black"
+                          strokeDasharray="4 4"
+                          strokeWidth="2"
+                          d="M107.36 2.48l105.7 185.47H2.66L108.35 2.48z"
+                          clipRule="evenodd"
+                        />
+                        <ellipse
+                          cx="182.68"
+                          cy="156.48"
+                          fill="white"
+                          rx="74.32"
+                          ry="74.52"
+                        />
+                        <path
+                          stroke="black"
+                          strokeWidth="2"
+                          d="M256.5 156.48c0 40.88-33.05 74.02-73.82 74.02-40.77 0-73.83-33.14-73.83-74.02 0-40.87 33.06-74.01 73.83-74.01 40.77 0 73.82 33.14 73.82 74.01z"
+                        />
+
+                        <mask
+                          id="a"
+                          width="149"
+                          height="150"
+                          x="108"
+                          y="81"
+                          maskUnits="userSpaceOnUse"
+                        >
+                          <ellipse
+                            cx="182.68"
+                            cy="156.48"
+                            fill="#fff"
+                            rx="74.32"
+                            ry="74.52"
+                          />
+                        </mask>
+                        <g mask="url(#a)">
+                          <path
+                            fill="black"
+                            fillRule="evenodd"
+                            d="M108.36 2.48l105.7 185.47H2.66L108.35 2.48z"
+                            clipRule="evenodd"
+                          />
+                        </g>
+                      </svg>
+
+                      <Flex direction="column" align="center" padding={4}>
+                        <Text size={2}>No deployments created yet.</Text>
+                        <Box padding={4}>
+                          <Button
+                            fontSize={3}
+                            paddingX={5}
+                            paddingY={4}
+                            tone="primary"
+                            radius={4}
+                            text="Add Project"
+                            onClick={() => setIsFormOpen(true)}
+                          />
+                        </Box>
+
+                        <Text size={1} weight="semibold" muted>
+                          <a
+                            href="https://github.com/ndimatteo/sanity-plugin-vercel-deploy#your-first-vercel-deployment"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: 'inherit' }}
+                          >
+                            Need help?
+                          </a>
+                        </Text>
+                      </Flex>
+                    </Flex>
+                  </Card>
+                )}
+              </Stack>
+            </Card>
+          </Flex>
+        </Container>
 
         {isFormOpen && (
           <Dialog
-            header="New Deployment"
+            header="New Project Deployment"
             id="create-webhook"
             width={1}
             onClickOutside={() => setIsFormOpen(false)}
@@ -229,7 +344,7 @@ const VercelDeploy = () => {
                   />
                   <Button
                     padding={4}
-                    text="Publish"
+                    text="Create"
                     tone="primary"
                     loading={isSubmitting}
                     onClick={() => onSubmit()}
@@ -247,7 +362,7 @@ const VercelDeploy = () => {
             <Box padding={4}>
               <Stack space={4}>
                 <FormField
-                  label="Display Title"
+                  title="Display Title"
                   description="Give your deploy a name, like 'Production'"
                 >
                   <TextInput
@@ -264,7 +379,7 @@ const VercelDeploy = () => {
                 </FormField>
 
                 <FormField
-                  label="Vercel Project Name"
+                  title="Vercel Project Name"
                   description="The exact name of the associated project on Vercel"
                 >
                   <TextInput
@@ -281,7 +396,7 @@ const VercelDeploy = () => {
                 </FormField>
 
                 <FormField
-                  label="Vercel Team Slug"
+                  title="Vercel Team Slug"
                   description="Required for projects under a Vercel Team (use team page URL slug)"
                 >
                   <TextInput
@@ -298,7 +413,7 @@ const VercelDeploy = () => {
                 </FormField>
 
                 <FormField
-                  label="Deploy Hook URL"
+                  title="Deploy Hook URL"
                   description="The Vercel deploy hook URL from your project's Git settings"
                 >
                   <TextInput
@@ -316,7 +431,7 @@ const VercelDeploy = () => {
                 </FormField>
 
                 <FormField
-                  label="Vercel Token"
+                  title="Vercel Token"
                   description="A Vercel token from your account settings"
                 >
                   <TextInput
@@ -332,14 +447,20 @@ const VercelDeploy = () => {
                   />
                 </FormField>
 
-                <Card padding={[3, 3, 4]} radius={3} shadow={1} tone="caution">
-                  <Box marginBottom={3}>
-                    <Inline space={[1]}>
-                      <WarningIcon style={{ fontSize: 24 }} />
+                <Card
+                  padding={4}
+                  paddingBottom={5}
+                  radius={3}
+                  shadow={1}
+                  tone="caution"
+                >
+                  <Box marginBottom={2} style={{ textAlign: 'center' }}>
+                    <Inline space={1}>
+                      <WarningOutlineIcon style={{ fontSize: 24 }} />
                       <Heading size={1}>Careful!</Heading>
                     </Inline>
                   </Box>
-                  <Text size={[1, 1, 1]}>
+                  <Text size={1} align="center">
                     Once you create this deployment you will not be able to edit
                     it.
                   </Text>
@@ -350,66 +471,6 @@ const VercelDeploy = () => {
         )}
       </ToastProvider>
     </ThemeProvider>
-  )
-}
-
-const EmptyState = () => {
-  return (
-    <>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        width="360"
-        viewBox="0 0 260 235"
-        className={styles.emptyIcon}
-      >
-        <path
-          fill="white"
-          fillRule="evenodd"
-          stroke="black"
-          strokeDasharray="4 4"
-          strokeWidth="2"
-          d="M107.36 2.48l105.7 185.47H2.66L108.35 2.48z"
-          clipRule="evenodd"
-        />
-        <ellipse cx="182.68" cy="156.48" fill="white" rx="74.32" ry="74.52" />
-        <path
-          stroke="black"
-          strokeWidth="2"
-          d="M256.5 156.48c0 40.88-33.05 74.02-73.82 74.02-40.77 0-73.83-33.14-73.83-74.02 0-40.87 33.06-74.01 73.83-74.01 40.77 0 73.82 33.14 73.82 74.01z"
-        />
-
-        <mask
-          id="a"
-          width="149"
-          height="150"
-          x="108"
-          y="81"
-          maskUnits="userSpaceOnUse"
-        >
-          <ellipse cx="182.68" cy="156.48" fill="#fff" rx="74.32" ry="74.52" />
-        </mask>
-        <g mask="url(#a)">
-          <path
-            fill="black"
-            fillRule="evenodd"
-            d="M108.36 2.48l105.7 185.47H2.66L108.35 2.48z"
-            clipRule="evenodd"
-          />
-        </g>
-      </svg>
-      <p className={styles.emptyList}>
-        No deploys created yet.{' '}
-        <a
-          className={styles.emptyHelpLink}
-          href="https://github.com/ndimatteo/sanity-plugin-vercel-deploy#your-first-vercel-deployment"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Need help?
-        </a>
-      </p>
-    </>
   )
 }
 

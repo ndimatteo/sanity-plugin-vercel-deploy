@@ -6,7 +6,7 @@ import spacetime from 'spacetime'
 import { Avatar, Box, Card, Flex, Spinner, Text, Tooltip } from '@sanity/ui'
 
 import styles from './deploy-history.css'
-import StatusIndicator from './deploy-status'
+import DeployStatus from './deploy-status'
 
 const DeployHistory = ({
   url,
@@ -89,7 +89,7 @@ const DeployHistory = ({
               </a>
             </td>
             <td>
-              <StatusIndicator status={deployment.state} />
+              <DeployStatus status={deployment.state} />
             </td>
             <td>
               <div>{deployment.meta?.githubCommitRef}</div>

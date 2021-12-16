@@ -1,13 +1,19 @@
 import React from 'react'
+import { Flex, Box } from '@sanity/ui'
 
 import styles from './deploy-status.css'
 
-const StatusIndicator = ({ status, children }) => {
+const DeployStatus = ({ status, children }) => {
   return (
-    <span className={styles.hookStatusIndicator} data-indicator={status}>
-      {titleCase(status)}
+    <Flex
+      wrap="nowrap"
+      align="center"
+      className={styles.hookStatusIndicator}
+      data-indicator={status}
+    >
+      <Box marginX={2}>{titleCase(status)}</Box>
       {children}
-    </span>
+    </Flex>
   )
 }
 
@@ -21,4 +27,4 @@ const titleCase = str => {
     .join(' ')
 }
 
-export default StatusIndicator
+export default DeployStatus
