@@ -59,7 +59,7 @@ const VercelDeploy = () => {
     if (pendingDeploy.team) {
       try {
         const fetchTeam = await axios.get(
-          `https://api.vercel.com/v2/teams/${pendingDeploy.team}`,
+          `https://api.vercel.com/v2/teams?slug=${pendingDeploy.team}`,
           {
             headers: {
               Authorization: `Bearer ${pendingDeploy.token}`
