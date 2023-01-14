@@ -41,9 +41,6 @@ export interface Deployments {
   }
 }
 
-/**
- * @public
- */
 export interface VercelDeployConfig {
   name?: string
   icon?: React.ReactNode

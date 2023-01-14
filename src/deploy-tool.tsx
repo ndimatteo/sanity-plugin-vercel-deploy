@@ -5,9 +5,6 @@ import { default as deployIcon } from './deploy-icon'
 import type { VercelDeployConfig } from './types'
 import VercelDeploy from './vercel-deploy'
 
-/**
- * @public
- */
 export const vercelDeployTool = definePlugin<VercelDeployConfig | void>(
   (options) => {
     const { name, title, icon, ...config } = options || {}
