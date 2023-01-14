@@ -1,12 +1,21 @@
 {
-  "extends": "./tsconfig.settings",
-  "include": ["./src", "./package.config.ts"],
   "compilerOptions": {
-    "resolveJsonModule": true,
+    "allowJs": true,
     "rootDir": ".",
     "outDir": "./dist",
-
-    "allowJs": true,
-    "jsx": "react-jsx"
-  }
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "target": "esnext",
+    "module": "esnext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "esModuleInterop": true,
+    "strict": true,
+    "downlevelIteration": true,
+    "declaration": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "isolatedModules": true
+  },
+  "include": ["./src", "./package.config.ts"]
 }
