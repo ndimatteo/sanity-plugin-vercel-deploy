@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react'
 import spacetime from 'spacetime'
 import useSWR from 'swr'
 
-import sanityClient from '@sanity/client'
 import { ClockIcon, EllipsisVerticalIcon, TrashIcon } from '@sanity/icons'
 import {
   Badge,
@@ -25,6 +24,7 @@ import {
 
 import DeployHistory from './deploy-history'
 import DeployStatus from './deploy-status'
+import { useClient } from './hook/useClient'
 import type { SanityDeploySchema, StatusType } from './types'
 
 const fetcher = (url: string, token: string) =>
@@ -46,7 +46,7 @@ const deployItem: React.FC<DeployItemProps> = ({
   vercelToken,
   vercelTeam,
 }) => {
-  const client = sanityClient({ apiVersion: '2021-03-25' })
+  const client = useClient()
 
   const [isLoading, setIsLoading] = useState(true)
   const [isDeploying, setDeploying] = useState(false)

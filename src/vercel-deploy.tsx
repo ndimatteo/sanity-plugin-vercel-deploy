@@ -3,7 +3,6 @@ import { nanoid } from 'nanoid'
 import { useEffect, useState } from 'react'
 import { type Subscription } from 'rxjs'
 
-import sanityClient from '@sanity/client'
 import { WarningOutlineIcon } from '@sanity/icons'
 import {
   Box,
@@ -27,6 +26,7 @@ import {
 import { FormField } from 'sanity'
 
 import DeployItem from './deploy-item'
+import { useClient } from './hook/useClient'
 import type { SanityDeploySchema } from './types'
 
 const initialDeploy = {
@@ -40,7 +40,7 @@ const initialDeploy = {
 const VercelDeploy = () => {
   const WEBHOOK_TYPE = 'webhook_deploy'
   const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
-  const client = sanityClient({ apiVersion: '2021-03-25' })
+  const client = useClient()
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
