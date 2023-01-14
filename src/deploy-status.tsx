@@ -2,7 +2,7 @@ import React from 'react'
 
 import { Box, Flex, type FlexJustify } from '@sanity/ui'
 
-import styles from './deploy-status.css'
+import styles from './deploy-status.css?inline'
 
 type DeployStatusProps = {
   status: string
