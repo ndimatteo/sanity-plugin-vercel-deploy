@@ -144,12 +144,10 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
                     {deployment.meta?.githubCommitMessage}
                   </Box>
                 </Text>
-                <Text size={1} muted>
-                  <Inline space={2}>
-                    <>
-                      <TransferIcon />
-                      {deployment.meta?.githubCommitRef}
-                    </>
+                <Text size={2} muted>
+                  <Inline space={3}>
+                    <TransferIcon />
+                    {deployment.meta?.githubCommitRef}
                   </Inline>
                 </Text>
               </Stack>

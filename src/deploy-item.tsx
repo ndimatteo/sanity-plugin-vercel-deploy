@@ -222,31 +222,29 @@ const deployItem: React.FC<DeployItemProps> = ({
         <Box flex={1} paddingBottom={1}>
           <Stack space={2}>
             <Inline space={2}>
-              <>
-                <Heading as="h2" size={1}>
-                  <Text weight="semibold">{name}</Text>
-                </Heading>
+              <Heading as="h2" size={1}>
+                <Text weight="semibold">{name}</Text>
+              </Heading>
+              <Badge
+                tone="primary"
+                paddingX={3}
+                paddingY={2}
+                radius={6}
+                fontSize={0}
+              >
+                {vercelProject}
+              </Badge>
+              {vercelTeam?.id && (
                 <Badge
-                  tone="primary"
+                  mode="outline"
                   paddingX={3}
                   paddingY={2}
                   radius={6}
                   fontSize={0}
                 >
-                  {vercelProject}
+                  {vercelTeam?.name}
                 </Badge>
-                {vercelTeam?.id && (
-                  <Badge
-                    mode="outline"
-                    paddingX={3}
-                    paddingY={2}
-                    radius={6}
-                    fontSize={0}
-                  >
-                    {vercelTeam?.name}
-                  </Badge>
-                )}
-              </>
+              )}
             </Inline>
             <Code size={1}>
               <Box

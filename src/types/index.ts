@@ -12,6 +12,7 @@ export type StatusType =
 export interface VercelTeam {
   [key: string]: unknown
   name: string
+  id: string
 }
 
 export interface SanityDeploySchema {
@@ -36,6 +37,7 @@ export interface Deployments {
   meta: {
     [key: string]: unknown
     githubCommitMessage: string
+    githubCommitRef: string
   }
 }
 
