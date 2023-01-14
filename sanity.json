@@ -1,12 +1,8 @@
 {
-  "paths": {
-    "source": "./src",
-    "compiled": "./dist"
-  },
   "parts": [
     {
-      "implements": "part:@sanity/base/tool",
-      "path": "index.js"
+      "implements": "part:@sanity/base/sanity-root",
+      "path": "./src/v2-incompatible.js"
     }
   ]
 }

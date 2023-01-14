@@ -1,6 +1,6 @@
 {
   "name": "sanity-plugin-vercel-deploy",
-  "version": "2.1.6",
+  "version": "3.0.0",
   "description": "Trigger Vercel Deploy Hooks from your Sanity Studio.",
   "keywords": [
     "sanity",
@@ -15,15 +15,37 @@
     "url": "https://github.com/ndimatteo/sanity-plugin-vercel-deploy/issues"
   },
   "homepage": "https://github.com/ndimatteo/sanity-plugin-vercel-deploy#readme",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
+  "source": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "source": "./src/index.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.esm.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "lib",
+    "sanity.json"
+  ],
   "scripts": {
-    "build": "babel src -d dist --copy-files",
-    "prepublish": "npm run build"
+    "build": "run-s clean && plugin-kit verify-package --silent && pkg-utils build --strict && pkg-utils --strict",
+    "clean": "rimraf dist",
+    "watch": "pkg-utils watch --strict",
+    "link-watch": "plugin-kit link-watch",
+    "prepublishOnly": "run-s build"
   },
   "dependencies": {
-    "@babel/runtime": "^7.12.5",
     "@sanity/icons": "^1.0.8",
-    "@sanity/ui": "^0.36.17",
+    "@sanity/incompatible-plugin": "^1.0.4",
+    "@sanity/ui": "^1.0.14",
     "axios": "^0.24.0",
     "nanoid": "^3.1.20",
     "prop-types": "^15.7.2",
@@ -31,21 +53,23 @@
     "swr": "^1.1.1"
   },
   "devDependencies": {
-    "@babel/cli": "^7.12.10",
-    "@babel/core": "^7.12.10",
-    "@babel/plugin-proposal-class-properties": "^7.12.1",
-    "@babel/plugin-transform-runtime": "^7.12.10",
-    "@babel/preset-env": "^7.12.11",
-    "@babel/preset-react": "^7.12.10"
+    "@sanity/pkg-utils": "^2.2.1",
+    "@sanity/plugin-kit": "^3.1.4",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^4.0.4",
+    "rollup-plugin-import-css": "^3.1.0"
   },
   "peerDependencies": {
-    "@sanity/base": "^2.1.1",
-    "react": "^16.14.0 || ^17.0.0",
-    "react-dom": "^16.14.0 || ^17.0.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sanity": "^3.2.3"
   },
   "sanityTemplate": {
     "suggestedName": "vercel-deploy",
     "requiresConfig": false,
     "minimumBaseVersion": "2.1.0"
+  },
+  "engines": {
+    "node": ">=14"
   }
 }

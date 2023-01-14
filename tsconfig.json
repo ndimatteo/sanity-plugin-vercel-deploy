@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.settings",
+  "include": ["./src", "./package.config.ts"],
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "rootDir": ".",
+    "outDir": "./dist",
+
+    "allowJs": true,
+    "jsx": "react-jsx"
+  }
+}

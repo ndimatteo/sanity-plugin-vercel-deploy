@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import useSWR from 'swr'
+import React, { useEffect, useState } from 'react'
 import spacetime from 'spacetime'
+import useSWR from 'swr'
 
-import sanityClient from 'part:@sanity/base/client'
-
+import sanityClient from '@sanity/client'
+import { ClockIcon, EllipsisVerticalIcon, TrashIcon } from '@sanity/icons'
 import {
-  useToast,
   Badge,
   Box,
   Button,
@@ -20,40 +19,42 @@ import {
   MenuItem,
   Stack,
   Text,
-  Tooltip
+  Tooltip,
+  useToast,
 } from '@sanity/ui'
-import { EllipsisVerticalIcon, ClockIcon, TrashIcon } from '@sanity/icons'
 
-import DeployStatus from './deploy-status'
 import DeployHistory from './deploy-history'
+import DeployStatus from './deploy-status'
+import type { SanityDeploySchema, StatusType } from './types'
 
-const fetcher = (url, token) =>
+const fetcher = (url: string, token: string) =>
   axios
     .get(url, {
       headers: {
         'content-type': 'application/json',
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     })
-    .then(res => res.data)
+    .then((res) => res.data)
 
-const deployItem = ({
+interface DeployItemProps extends SanityDeploySchema {}
+const deployItem: React.FC<DeployItemProps> = ({
   name,
   url,
-  id,
+  _id,
   vercelProject,
   vercelToken,
-  vercelTeam
+  vercelTeam,
 }) => {
-  const client = sanityClient.withConfig({ apiVersion: '2021-03-25' })
+  const client = sanityClient({ apiVersion: '2021-03-25' })
 
   const [isLoading, setIsLoading] = useState(true)
   const [isDeploying, setDeploying] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-  const [errorMessage, setErrorMessage] = useState(null)
-  const [status, setStatus] = useState('LOADING')
-  const [timestamp, setTimestamp] = useState(null)
-  const [buildTime, setBuildTime] = useState(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [status, setStatus] = useState<StatusType>('LOADING')
+  const [timestamp, setTimestamp] = useState<string | null>(null)
+  const [buildTime, setBuildTime] = useState<string | null>(null)
 
   const toast = useToast()
 
@@ -62,17 +63,17 @@ const deployItem = ({
       `https://api.vercel.com/v8/projects/${vercelProject}${
         vercelTeam?.id ? `?teamId=${vercelTeam?.id}` : ''
       }`,
-      vercelToken
+      vercelToken,
     ],
     (url, token) => fetcher(url, token),
     {
       errorRetryCount: 3,
-      onError: err => {
+      onError: (err) => {
         const errorMessage = err.response?.data?.error?.message
         setStatus('ERROR')
         setErrorMessage(errorMessage)
         setIsLoading(false)
-      }
+      },
     }
   )
 
@@ -83,22 +84,22 @@ const deployItem = ({
       }&meta-deployHookId=${url.split('/').pop()}&limit=1${
         vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
       }`,
-      vercelToken
+      vercelToken,
     ],
     (url, token) => fetcher(url, token),
     {
       errorRetryCount: 3,
       refreshInterval: isDeploying ? 5000 : 0,
-      onError: err => {
+      onError: (err) => {
         const errorMessage = err.response?.data?.error?.message
         setStatus('ERROR')
         setErrorMessage(errorMessage)
         setIsLoading(false)
-      }
+      },
     }
   )
 
-  const onDeploy = (name, url) => {
+  const onDeploy = (name: string, url: string) => {
     setStatus('INITIATED')
     setDeploying(true)
     setTimestamp(null)
@@ -106,34 +107,34 @@ const deployItem = ({
 
     axios
       .post(url)
-      .then(res => {
+      .then(() => {
         toast.push({
           status: 'success',
           title: 'Success!',
-          description: `Triggered Deployment: ${name}`
+          description: `Triggered Deployment: ${name}`,
         })
       })
-      .catch(err => {
+      .catch((err) => {
         setDeploying(false)
         toast.push({
           status: 'error',
           title: 'Deploy Failed.',
-          description: `${err}`
+          description: `${err}`,
         })
       })
   }
 
-  const onCancel = (id, token) => {
+  const onCancel = (id: string, token: string) => {
     setIsLoading(true)
     axios
       .patch(`https://api.vercel.com/v12/deployments/${id}/cancel`, null, {
         headers: {
           'content-type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-      .then(res => res.data)
-      .then(res => {
+      .then((res) => res.data)
+      .then((res) => {
         setStatus('CANCELED')
         setDeploying(false)
         setIsLoading(false)
@@ -142,12 +143,12 @@ const deployItem = ({
       })
   }
 
-  const onRemove = (name, id) => {
+  const onRemove = (name: string, id: string) => {
     setIsLoading(true)
-    client.delete(id).then(res => {
+    client.delete(id).then(() => {
       toast.push({
         status: 'success',
-        title: `Successfully deleted deployment: ${name}`
+        title: `Successfully deleted deployment: ${name}`,
       })
     })
   }
@@ -168,7 +169,9 @@ const deployItem = ({
       setIsLoading(false)
     }
 
-    return () => (isSubscribed = false)
+    return () => {
+      isSubscribed = false
+    }
   }, [deploymentData])
 
   // update deploy state after status is updated
@@ -183,11 +186,13 @@ const deployItem = ({
       }
     }
 
-    return () => (isSubscribed = false)
+    return () => {
+      isSubscribed = false
+    }
   }, [status])
 
   // count build time
-  const tick = timestamp => {
+  const tick = (timestamp: string | null) => {
     if (timestamp) {
       setBuildTime(spacetime.now().since(spacetime(timestamp)).rounded)
     }
@@ -217,36 +222,38 @@ const deployItem = ({
         <Box flex={1} paddingBottom={1}>
           <Stack space={2}>
             <Inline space={2}>
-              <Heading as="h2" size={1}>
-                <Text weight="semibold">{name}</Text>
-              </Heading>
-              <Badge
-                tone="primary"
-                paddingX={3}
-                paddingY={2}
-                radius={6}
-                fontSize={0}
-              >
-                {vercelProject}
-              </Badge>
-              {vercelTeam?.id && (
+              <>
+                <Heading as="h2" size={1}>
+                  <Text weight="semibold">{name}</Text>
+                </Heading>
                 <Badge
-                  mode="outline"
+                  tone="primary"
                   paddingX={3}
                   paddingY={2}
                   radius={6}
                   fontSize={0}
                 >
-                  {vercelTeam?.name}
+                  {vercelProject}
                 </Badge>
-              )}
+                {vercelTeam?.id && (
+                  <Badge
+                    mode="outline"
+                    paddingX={3}
+                    paddingY={2}
+                    radius={6}
+                    fontSize={0}
+                  >
+                    {vercelTeam?.name}
+                  </Badge>
+                )}
+              </>
             </Inline>
             <Code size={1}>
               <Box
                 style={{
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis'
+                  textOverflow: 'ellipsis',
                 }}
               >
                 {url}
@@ -314,6 +321,7 @@ const deployItem = ({
             )}
 
             <MenuButton
+              id={_id}
               button={
                 <Button
                   mode="bleed"
@@ -321,7 +329,7 @@ const deployItem = ({
                   disabled={isDeploying || isLoading}
                 />
               }
-              portal
+              popover={{ portal: true, placement: 'bottom-end' }}
               menu={
                 <Menu>
                   <MenuItem
@@ -334,11 +342,10 @@ const deployItem = ({
                     text="Delete"
                     icon={TrashIcon}
                     tone="critical"
-                    onClick={() => onRemove(name, id)}
+                    onClick={() => onRemove(name, _id)}
                   />
                 </Menu>
               }
-              placement="bottom-end"
             />
           </Inline>
         </Flex>
