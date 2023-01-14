@@ -1,9 +1,9 @@
-import { lazy } from 'react'
 import { definePlugin } from 'sanity'
 import { route } from 'sanity/router'
 
 import { default as deployIcon } from './deploy-icon'
 import type { VercelDeployConfig } from './types'
+import VercelDeploy from './vercel-deploy'
 
 /**
  * @public
@@ -19,7 +19,7 @@ export const vercelDeployTool = definePlugin<VercelDeployConfig | void>(
           name: name || 'vercel-deploy',
           title: title || 'Deploy',
           icon: icon || deployIcon,
-          component: lazy(() => import('./vercel-deploy')),
+          component: VercelDeploy,
           options: config,
           router: route.create('/*'),
         },
