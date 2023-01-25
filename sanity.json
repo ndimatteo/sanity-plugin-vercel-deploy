@@ -2,11 +2,7 @@
   "parts": [
     {
       "implements": "part:@sanity/base/sanity-root",
-      "path": "./src/v2-incompatible.js"
-    },
-    {
-      "implements": "part:@sanity/base/theme/variables/override-style",
-      "path": "./src/deploy-status.css"
+      "path": "./v2-incompatible.js"
     }
   ]
 }

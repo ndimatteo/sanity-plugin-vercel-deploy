@@ -24,8 +24,8 @@ npm install sanity-plugin-vercel-deploy
 
 ```ts
 // `sanity.config.ts` / `sanity.config.js`:
-import { defineConfig } from 'sanity'
-import { vercelDeployTool } from 'sanity-plugin-vercel-deploy'
+import {defineConfig} from 'sanity'
+import {vercelDeployTool} from 'sanity-plugin-vercel-deploy'
 
 export default defineConfig({
   // ...
@@ -73,6 +73,16 @@ To create a new deployment, click the `Add Project` button. Next, you'll be prom
 > This is a token from your Vercel Account (not project). Navigate to your Account Settings, and go to "Tokens". Create a new Token, giving it a recognizable name for what it's being used for, like "Sanity Deploy". A Token will be generated for you to copy **once**.
 
 😎 Once you've created your deployment you can now trigger deploys at anytime!
+
+<br />
+
+## Develop & test
+
+This plugin uses [@sanity/plugin-kit](https://github.com/sanity-io/plugin-kit)
+with default configuration for build & watch scripts.
+
+See [Testing a plugin in Sanity Studio](https://github.com/sanity-io/plugin-kit#testing-a-plugin-in-sanity-studio)
+on how to run this plugin with hotreload in the studio.
 
 <br />
 
