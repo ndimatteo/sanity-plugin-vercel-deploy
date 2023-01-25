@@ -19,7 +19,8 @@ import {
 import DeployStatus from './deploy-status'
 import type { Deployments, SanityDeploySchema } from './types'
 
-interface DeployHistoryProps extends Omit<SanityDeploySchema, '_id' | 'name'> {
+interface DeployHistoryProps
+  extends Omit<SanityDeploySchema, '_id' | 'name' | 'disableDeleteAction'> {
   hookContext?: any
 }
 const DeployHistory: React.FC<DeployHistoryProps> = ({
