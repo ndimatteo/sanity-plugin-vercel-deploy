@@ -22,6 +22,7 @@ export interface SanityDeploySchema {
   vercelProject: string
   vercelTeam: VercelTeam
   vercelToken: string
+  disableDeleteAction: boolean
 }
 
 export interface Deployments {

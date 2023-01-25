@@ -2,30 +2,32 @@
   Vercel Deployment for Sanity
 </h3>
 <p align="center">
-  <strong>Trigger Vercel Deploy Hooks from your Sanity Studio.</strong><br />
+  <strong>Trigger Vercel Deploy Hooks from your Sanity V3 Studio.</strong><br />
 ✨ LIVE status updates ✨ multiple deployments ✨ active polling ✨ Vercel Teams support ✨
 </p>
 
-![vercel-deploy-v2](https://user-images.githubusercontent.com/737188/146429488-5f7e184c-95c3-47e6-87c9-e51a8bee8c40.png)
+![vercel-deploy-v3](https://user-images.githubusercontent.com/737188/214717596-ea116fc1-a5e4-469e-8f9b-4173a3bc9689.png)
 
 <br />
 
-## Install
-
-Run the following command in your studio folder using the Sanity CLI:
+## 🔌 Install
 
 ```sh
-npm install sanity-plugin-vercel-deploy
+yarn add sanity-plugin-vercel-deploy
+# or npm
+npm i sanity-plugin-vercel-deploy
 ```
+
+> **Warning** <br />This is a **Sanity Studio V3** plugin. For the V2 version, please refer to the [studio-v2 branch](https://github.com/ndimatteo/sanity-plugin-vercel-deploy/tree/studio-v2).
 
 <br />
 
-## Configure
+## ⚙️ Configure
 
 ```ts
 // `sanity.config.ts` / `sanity.config.js`:
-import {defineConfig} from 'sanity'
-import {vercelDeployTool} from 'sanity-plugin-vercel-deploy'
+import { defineConfig } from 'sanity'
+import { vercelDeployTool } from 'sanity-plugin-vercel-deploy'
 
 export default defineConfig({
   // ...
@@ -38,45 +40,40 @@ export default defineConfig({
 
 <br />
 
-## Your first Vercel Deployment
+## 🚀 Your first Vercel Deployment
 
 Once installed, you should see a new "Deploy" tool in your Sanity Studio navbar.
 
-To create a new deployment, click the `Add Project` button. Next, you'll be prompted to add the following:
+To create a new deployment, click the **"Add Project"** button. Next, you'll be prompted to add the following:
 
-**`Title`**
+#### `Title`
 
-> A name for your deployment. This can be whatever you want, to help you organize your deployments. Typically, this should be the environment you are deploying to, like `Production` or `Staging`
+A name for your deployment to help you organize your deployments. <br />
+_Typically, this should be the environment you are deploying to, like `Production` or `Staging`_
 
-<br />
+#### `Vercel Project Name`
 
-**`Vercel Project Name`**
+This is the slugified project name listed in your Vercel account. <br />
+_You can find this in your Vercel Project under Settings → General → "Project Name"_
 
-> This is the actual Project Name listed in your Vercel account. Navigate to your Project Settings within Vercel to find your Project Name.
+#### `Vercel Team Name` _(optional)_
 
-<br />
+If your project is part of a Vercel Team you must provide this value. <br />
+_You can find this in your Vercel Team, under Settings → General → "Team Name"_
 
-**`Vercel Team Slug`**
+#### `Deploy Hook URL`
 
-> If your project is part of a Vercel Team you will need to fill out this field. Navigate to your Team from within Vercel, and use the URL slug (ie. vercel.com/`team-666`).
+This is the Vercel Deploy hook you want to trigger builds with. <br />
+_You can find this in your Vercel Project under Settings → Git → "Deploy Hooks"_
 
-<br />
+#### `Vercel Token`
 
-**`Deploy Hook URL`**
-
-> This is the Vercel Deploy hook you want to trigger. You can set these up within your Vercel Project, under Settings -> Git and scroll down to the "Deploy Hooks" section. Create your desired hook (ie. "Production Deploy" on `main` branch)
-
-<br />
-
-**`Vercel Token`**
-
-> This is a token from your Vercel Account (not project). Navigate to your Account Settings, and go to "Tokens". Create a new Token, giving it a recognizable name for what it's being used for, like "Sanity Deploy". A Token will be generated for you to copy **once**.
-
-😎 Once you've created your deployment you can now trigger deploys at anytime!
+This is a token from your Vercel Account (not project). <br />
+_You can find this from your Vercel Account dropdown under Settings → "Tokens"_
 
 <br />
 
-## Develop & test
+## 🧪 Develop & test
 
 This plugin uses [@sanity/plugin-kit](https://github.com/sanity-io/plugin-kit)
 with default configuration for build & watch scripts.
@@ -86,7 +83,7 @@ on how to run this plugin with hotreload in the studio.
 
 <br />
 
-## License
+## 🤝 License
 
 ### MIT
 

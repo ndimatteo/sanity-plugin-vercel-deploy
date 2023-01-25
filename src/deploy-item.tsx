@@ -2,6 +2,7 @@ import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import spacetime from 'spacetime'
 import useSWR from 'swr'
+import { isDev } from 'sanity'
 
 import { ClockIcon, EllipsisVerticalIcon, TrashIcon } from '@sanity/icons'
 import {
@@ -45,6 +46,7 @@ const deployItem: React.FC<DeployItemProps> = ({
   vercelProject,
   vercelToken,
   vercelTeam,
+  disableDeleteAction,
 }) => {
   const client = useClient()
 
@@ -350,12 +352,15 @@ const deployItem: React.FC<DeployItemProps> = ({
                     onClick={() => setIsHistoryOpen(true)}
                     disabled={!deploymentData?.deployments.length}
                   />
-                  <MenuItem
-                    text="Delete"
-                    icon={TrashIcon}
-                    tone="critical"
-                    onClick={() => onRemove(name, _id)}
-                  />
+
+                  {!disableDeleteAction && (
+                    <MenuItem
+                      text="Delete"
+                      icon={TrashIcon}
+                      tone="critical"
+                      onClick={() => onRemove(name, _id)}
+                    />
+                  )}
                 </Menu>
               }
             />

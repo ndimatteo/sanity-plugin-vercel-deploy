@@ -18,6 +18,7 @@ import {
   Stack,
   studioTheme,
   Text,
+  Switch,
   TextInput,
   ThemeProvider,
   ToastProvider,
@@ -35,6 +36,7 @@ const initialDeploy = {
   team: '',
   url: '',
   token: '',
+  disableDeleteAction: false,
 }
 
 const VercelDeploy = () => {
@@ -104,6 +106,7 @@ const VercelDeploy = () => {
           id: vercelTeamID || undefined,
         },
         vercelToken: pendingDeploy.token,
+        disableDeleteAction: pendingDeploy.disableDeleteAction,
       })
       .then(() => {
         toast.push({
@@ -160,6 +163,8 @@ const VercelDeploy = () => {
       webhookSubscription && webhookSubscription.unsubscribe()
     }
   }, [])
+
+  console.log({ pendingDeploy })
 
   return (
     <ThemeProvider theme={studioTheme}>
@@ -242,6 +247,7 @@ const VercelDeploy = () => {
                         vercelProject={deploy.vercelProject}
                         vercelTeam={deploy.vercelTeam}
                         vercelToken={deploy.vercelToken}
+                        disableDeleteAction={deploy.disableDeleteAction}
                       />
                     </Card>
                   ))
@@ -371,8 +377,13 @@ const VercelDeploy = () => {
             <Box padding={4}>
               <Stack space={4}>
                 <FormField
-                  title="Display Title"
-                  description="Give your deploy a name, like 'Production'"
+                  title="Display Title (internal use only)"
+                  description={
+                    <>
+                      This should be the environment you are deploying to, like{' '}
+                      <em>Production</em> or <em>Staging</em>
+                    </>
+                  }
                 >
                   <TextInput
                     type="text"
@@ -390,7 +401,7 @@ const VercelDeploy = () => {
 
                 <FormField
                   title="Vercel Project Name"
-                  description="The exact name of the associated project on Vercel"
+                  description={`Vercel Project: Settings → General → "Project Name"`}
                 >
                   <TextInput
                     type="text"
@@ -407,8 +418,8 @@ const VercelDeploy = () => {
                 </FormField>
 
                 <FormField
-                  title="Vercel Team Slug"
-                  description="Required for projects under a Vercel Team (use team page URL slug)"
+                  title="Vercel Team Name"
+                  description={`Required for projects under a Vercel Team: Settings → General → "Team Name"`}
                 >
                   <TextInput
                     type="text"
@@ -426,7 +437,7 @@ const VercelDeploy = () => {
 
                 <FormField
                   title="Deploy Hook URL"
-                  description="The Vercel deploy hook URL from your project's Git settings"
+                  description={`Vercel Project: Settings → Git → "Deploy Hooks"`}
                 >
                   <TextInput
                     type="text"
@@ -445,7 +456,7 @@ const VercelDeploy = () => {
 
                 <FormField
                   title="Vercel Token"
-                  description="A Vercel token from your account settings"
+                  description={`Vercel Account dropdown: Settings → "Tokens"`}
                 >
                   <TextInput
                     type="text"
@@ -459,6 +470,36 @@ const VercelDeploy = () => {
                       }))
                     }}
                   />
+                </FormField>
+
+                <FormField>
+                  <Card paddingY={3}>
+                    <Flex align="center">
+                      <Switch
+                        id="disableDeleteAction"
+                        style={{ display: 'block' }}
+                        onChange={(e) => {
+                          e.persist()
+                          const isChecked = (e.target as HTMLInputElement)
+                            .checked
+
+                          setpendingDeploy((prevState) => ({
+                            ...prevState,
+                            ...{ disableDeleteAction: isChecked },
+                          }))
+                        }}
+                        checked={pendingDeploy.disableDeleteAction}
+                      />
+                      <Box flex={1} paddingLeft={3}>
+                        <Text>
+                          <label htmlFor="disableDeleteAction">
+                            Disable the "Delete" action for this item in
+                            production?
+                          </label>
+                        </Text>
+                      </Box>
+                    </Flex>
+                  </Card>
                 </FormField>
 
                 <Card
