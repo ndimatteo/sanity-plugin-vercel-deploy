@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
 import axios from 'axios'
+import React, { useEffect, useState } from 'react'
 import spacetime from 'spacetime'
 
+import { TransferIcon } from '@sanity/icons'
 import {
   Avatar,
   Box,
@@ -12,26 +13,30 @@ import {
   Spinner,
   Stack,
   Text,
-  Tooltip
+  Tooltip,
 } from '@sanity/ui'
-import { TransferIcon } from '@sanity/icons'
 
 import DeployStatus from './deploy-status'
+import type { Deployments, SanityDeploySchema } from './types'
 
-const DeployHistory = ({
+interface DeployHistoryProps extends Omit<SanityDeploySchema, '_id' | 'name'> {
+  hookContext?: any
+}
+const DeployHistory: React.FC<DeployHistoryProps> = ({
   url,
   vercelProject,
   vercelToken,
   vercelTeam,
-  hookContext
 }) => {
-  const [state, setState] = useState({})
+  const [deployments, setDeployments] = useState<Deployments[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     if (!vercelProject) {
       return
     }
-    setState({ loading: true })
+    setLoading(true)
 
     axios
       .get(
@@ -41,27 +46,23 @@ const DeployHistory = ({
         {
           headers: {
             'content-type': 'application/json',
-            Authorization: `Bearer ${vercelToken}`
-          }
+            Authorization: `Bearer ${vercelToken}`,
+          },
         }
       )
       .then(({ data }) => {
-        setState({
-          deployments: data.deployments,
-          loading: false,
-          error: false
-        })
+        setDeployments(data.deployments)
+        setLoading(false)
+        setError(false)
       })
-      .catch(e => {
-        setState({
-          error: true,
-          loading: false
-        })
+      .catch((e) => {
+        setLoading(false)
+        setError(true)
         console.warn(e)
       })
   }, [vercelProject])
 
-  if (state.loading) {
+  if (loading) {
     return (
       <Flex direction="column" align="center" justify="center" paddingTop={3}>
         <Spinner size={4} />
@@ -72,7 +73,7 @@ const DeployHistory = ({
     )
   }
 
-  if (state.error) {
+  if (error) {
     return (
       <Card padding={4} radius={2} shadow={1} tone="critical">
         <Text size={2} align="center">
@@ -103,7 +104,7 @@ const DeployHistory = ({
         </Flex>
       </Card>
 
-      {state.deployments?.map(deployment => (
+      {deployments?.map((deployment) => (
         <Card key={deployment.uid} as={'li'} padding={4} borderBottom>
           <Flex align="center">
             <Box flex={3}>
@@ -112,7 +113,7 @@ const DeployHistory = ({
                   style={{
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis'
+                    textOverflow: 'ellipsis',
                   }}
                 >
                   <a
@@ -137,21 +138,21 @@ const DeployHistory = ({
                     style={{
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis'
+                      textOverflow: 'ellipsis',
                     }}
                   >
                     {deployment.meta?.githubCommitMessage}
                   </Box>
                 </Text>
-                <Text size={1} muted>
-                  <Inline space={2}>
+                <Text size={2} muted>
+                  <Inline space={3}>
                     <TransferIcon />
                     {deployment.meta?.githubCommitRef}
                   </Inline>
                 </Text>
               </Stack>
             </Box>
-            <Flex flex={2} justify="right" marginLeft={2}>
+            <Flex flex={2} justify="flex-end" marginLeft={2}>
               <Inline space={2}>
                 <Text style={{ whiteSpace: 'nowrap' }} muted>
                   {spacetime.now().since(spacetime(deployment.created)).rounded}

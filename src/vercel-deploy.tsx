@@ -1,51 +1,51 @@
-import React, { useState, useEffect } from 'react'
-import { nanoid } from 'nanoid'
 import axios from 'axios'
+import { nanoid } from 'nanoid'
+import { useEffect, useState } from 'react'
+import { type Subscription } from 'rxjs'
 
-import sanityClient from 'part:@sanity/base/client'
-
-import { FormField } from '@sanity/base/components'
-
+import { WarningOutlineIcon } from '@sanity/icons'
 import {
+  Box,
+  Button,
+  Card,
+  Container,
+  Dialog,
+  Flex,
+  Grid,
+  Heading,
+  Inline,
+  Spinner,
+  Stack,
   studioTheme,
+  Text,
+  TextInput,
   ThemeProvider,
   ToastProvider,
   useToast,
-  Container,
-  Dialog,
-  Grid,
-  Flex,
-  Box,
-  Card,
-  Stack,
-  Spinner,
-  Button,
-  Text,
-  Inline,
-  Heading,
-  TextInput
 } from '@sanity/ui'
-import { WarningOutlineIcon } from '@sanity/icons'
+import { FormField } from 'sanity'
 
 import DeployItem from './deploy-item'
+import { useClient } from './hook/useClient'
+import type { SanityDeploySchema } from './types'
 
 const initialDeploy = {
   title: '',
   project: '',
   team: '',
   url: '',
-  token: ''
+  token: '',
 }
 
 const VercelDeploy = () => {
   const WEBHOOK_TYPE = 'webhook_deploy'
   const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
-  const client = sanityClient.withConfig({ apiVersion: '2021-03-25' })
+  const client = useClient()
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [deploys, setDeploys] = useState([])
+  const [deploys, setDeploys] = useState<SanityDeploySchema[]>([])
   const [pendingDeploy, setpendingDeploy] = useState(initialDeploy)
   const toast = useToast()
 
@@ -62,8 +62,8 @@ const VercelDeploy = () => {
           `https://api.vercel.com/v2/teams?slug=${pendingDeploy.team}`,
           {
             headers: {
-              Authorization: `Bearer ${pendingDeploy.token}`
-            }
+              Authorization: `Bearer ${pendingDeploy.token}`,
+            },
           }
         )
 
@@ -82,7 +82,7 @@ const VercelDeploy = () => {
           title: 'No Team found!',
           closable: true,
           description:
-            'Make sure the token you provided is valid and that the team’s slug correspond to the one you see in Vercel'
+            'Make sure the token you provided is valid and that the team’s slug correspond to the one you see in Vercel',
         })
 
         return
@@ -101,15 +101,15 @@ const VercelDeploy = () => {
         vercelTeam: {
           slug: pendingDeploy.team || undefined,
           name: vercelTeamName || undefined,
-          id: vercelTeamID || undefined
+          id: vercelTeamID || undefined,
         },
-        vercelToken: pendingDeploy.token
+        vercelToken: pendingDeploy.token,
       })
       .then(() => {
         toast.push({
           status: 'success',
           title: 'Success!',
-          description: `Created Deployment: ${pendingDeploy.title}`
+          description: `Created Deployment: ${pendingDeploy.title}`,
         })
         setIsFormOpen(false)
         setIsSubmitting(false)
@@ -119,31 +119,40 @@ const VercelDeploy = () => {
 
   // Fetch all existing webhooks and listen for newly created
   useEffect(() => {
-    let webhookSubscription
+    let webhookSubscription: Subscription
 
-    client.fetch(WEBHOOK_QUERY).then(w => {
+    client.fetch(WEBHOOK_QUERY).then((w) => {
       setDeploys(w)
       setIsLoading(false)
 
       webhookSubscription = client
-        .listen(WEBHOOK_QUERY, {}, { includeResult: true })
-        .subscribe(res => {
-          const wasCreated = res.mutations.some(item =>
-            Object.prototype.hasOwnProperty.call(item, 'create')
-          )
-          const wasDeleted = res.mutations.some(item =>
-            Object.prototype.hasOwnProperty.call(item, 'delete')
-          )
-          if (wasCreated) {
-            setDeploys(prevState => {
-              return [...prevState, res.result]
-            })
-          }
-          if (wasDeleted) {
-            setDeploys(prevState =>
-              prevState.filter(w => w._id !== res.documentId)
-            )
-          }
+        .listen<SanityDeploySchema>(WEBHOOK_QUERY, {}, { includeResult: true })
+        .subscribe({
+          next: (res) => {
+            if (res.type === 'mutation') {
+              const wasCreated = res.mutations.some((item) =>
+                Object.prototype.hasOwnProperty.call(item, 'create')
+              )
+
+              const wasDeleted = res.mutations.some((item) =>
+                Object.prototype.hasOwnProperty.call(item, 'delete')
+              )
+
+              if (wasCreated) {
+                setDeploys((prevState) => {
+                  if (res.result) {
+                    return [...prevState, res.result]
+                  }
+                  return prevState
+                })
+              }
+              if (wasDeleted) {
+                setDeploys((prevState) =>
+                  prevState.filter((w) => w._id !== res.documentId)
+                )
+              }
+            }
+          },
         })
     })
 
@@ -223,13 +232,13 @@ const VercelDeploy = () => {
                     </Flex>
                   </Card>
                 ) : deploys.length ? (
-                  deploys.map(deploy => (
+                  deploys.map((deploy) => (
                     <Card key={deploy._id} as={'li'} padding={4} borderBottom>
                       <DeployItem
                         key={deploy._id}
                         name={deploy.name}
                         url={deploy.url}
-                        id={deploy._id}
+                        _id={deploy._id}
                         vercelProject={deploy.vercelProject}
                         vercelTeam={deploy.vercelTeam}
                         vercelToken={deploy.vercelToken}
@@ -368,11 +377,12 @@ const VercelDeploy = () => {
                   <TextInput
                     type="text"
                     value={pendingDeploy.title}
-                    onChange={e => {
+                    onChange={(e) => {
                       e.persist()
-                      setpendingDeploy(prevState => ({
+                      const title = (e.target as HTMLInputElement).value
+                      setpendingDeploy((prevState) => ({
                         ...prevState,
-                        ...{ title: e?.target?.value }
+                        ...{ title },
                       }))
                     }}
                   />
@@ -385,11 +395,12 @@ const VercelDeploy = () => {
                   <TextInput
                     type="text"
                     value={pendingDeploy.project}
-                    onChange={e => {
+                    onChange={(e) => {
                       e.persist()
-                      setpendingDeploy(prevState => ({
+                      const project = (e.target as HTMLInputElement).value
+                      setpendingDeploy((prevState) => ({
                         ...prevState,
-                        ...{ project: e?.target?.value }
+                        ...{ project },
                       }))
                     }}
                   />
@@ -402,11 +413,12 @@ const VercelDeploy = () => {
                   <TextInput
                     type="text"
                     value={pendingDeploy.team}
-                    onChange={e => {
+                    onChange={(e) => {
                       e.persist()
-                      setpendingDeploy(prevState => ({
+                      const team = (e.target as HTMLInputElement).value
+                      setpendingDeploy((prevState) => ({
                         ...prevState,
-                        ...{ team: e?.target?.value }
+                        ...{ team },
                       }))
                     }}
                   />
@@ -420,11 +432,12 @@ const VercelDeploy = () => {
                     type="text"
                     inputMode="url"
                     value={pendingDeploy.url}
-                    onChange={e => {
+                    onChange={(e) => {
                       e.persist()
-                      setpendingDeploy(prevState => ({
+                      const url = (e.target as HTMLInputElement).value
+                      setpendingDeploy((prevState) => ({
                         ...prevState,
-                        ...{ url: e?.target?.value }
+                        ...{ url },
                       }))
                     }}
                   />
@@ -437,11 +450,12 @@ const VercelDeploy = () => {
                   <TextInput
                     type="text"
                     value={pendingDeploy.token}
-                    onChange={e => {
+                    onChange={(e) => {
                       e.persist()
-                      setpendingDeploy(prevState => ({
+                      const token = (e.target as HTMLInputElement).value
+                      setpendingDeploy((prevState) => ({
                         ...prevState,
-                        ...{ token: e?.target?.value }
+                        ...{ token },
                       }))
                     }}
                   />

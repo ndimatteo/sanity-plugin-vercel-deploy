@@ -1,9 +1,19 @@
 import React from 'react'
-import { Flex, Box } from '@sanity/ui'
 
-import styles from './deploy-status.css'
+import { Box, Flex, type FlexJustify } from '@sanity/ui'
 
-const DeployStatus = ({ status, justify, children }) => {
+import styles from './deploy-status.css?inline'
+
+type DeployStatusProps = {
+  status: string
+  justify?: FlexJustify | FlexJustify[]
+  children?: React.ReactNode
+}
+const DeployStatus: React.FC<DeployStatusProps> = ({
+  status,
+  justify,
+  children,
+}) => {
   return (
     <Flex
       wrap="nowrap"
@@ -18,11 +28,11 @@ const DeployStatus = ({ status, justify, children }) => {
   )
 }
 
-const titleCase = str => {
+const titleCase = (str: string) => {
   return str
     .toLowerCase()
     .split(' ')
-    .map(word => {
+    .map((word) => {
       return word.charAt(0).toUpperCase() + word.slice(1)
     })
     .join(' ')
