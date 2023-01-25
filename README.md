@@ -8,6 +8,8 @@
 
 ![vercel-deploy-v2](https://user-images.githubusercontent.com/737188/146429488-5f7e184c-95c3-47e6-87c9-e51a8bee8c40.png)
 
+<br />
+
 ## Install
 
 Run the following command in your studio folder using the Sanity CLI:
@@ -16,7 +18,9 @@ Run the following command in your studio folder using the Sanity CLI:
 npm install sanity-plugin-vercel-deploy
 ```
 
-### Configuring
+<br />
+
+## Configure
 
 ```ts
 // `sanity.config.ts` / `sanity.config.js`:
