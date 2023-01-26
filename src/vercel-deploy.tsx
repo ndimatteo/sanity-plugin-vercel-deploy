@@ -134,9 +134,16 @@ const VercelDeploy = () => {
                 Object.prototype.hasOwnProperty.call(item, 'create')
               )
 
+              const wasPatched = res.mutations.some((item) =>
+                Object.prototype.hasOwnProperty.call(item, 'patch')
+              )
+
               const wasDeleted = res.mutations.some((item) =>
                 Object.prototype.hasOwnProperty.call(item, 'delete')
               )
+
+              const deployFilter = (deploy: SanityDeploySchema) =>
+                deploy._id !== res.documentId
 
               if (wasCreated) {
                 setDeploys((prevState) => {
@@ -146,9 +153,18 @@ const VercelDeploy = () => {
                   return prevState
                 })
               }
+              if (wasPatched) {
+                setDeploys((prevState) => {
+                  const filteredDeploys = prevState.filter(deployFilter)
+
+                  if (res.result) {
+                    return [...filteredDeploys, res.result]
+                  }
+
+                  return filteredDeploys
+                })
+              }
               if (wasDeleted) {
-                const deployFilter = (deploy: SanityDeploySchema) =>
-                  deploy._id !== res.documentId
                 setDeploys((prevState) => prevState.filter(deployFilter))
               }
             }
