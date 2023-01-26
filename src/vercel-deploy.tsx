@@ -181,8 +181,6 @@ const VercelDeploy = () => {
     }
   }, [WEBHOOK_QUERY, client])
 
-  console.log(scheme)
-
   return (
     <ThemeProvider theme={studioTheme}>
       <ToastProvider>
