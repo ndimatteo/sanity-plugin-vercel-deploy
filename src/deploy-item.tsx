@@ -493,7 +493,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
                 />
                 <Button
                   padding={4}
-                  text="Edit"
+                  text="Update"
                   tone="primary"
                   loading={isSubmitting}
                   onClick={() => onSubmitEdit()}
@@ -511,8 +511,13 @@ const DeployItem: React.FC<DeployItemProps> = ({
           <Box padding={4}>
             <Stack space={4}>
               <FormField
-                title="Display Title"
-                description="Give your deploy a name, like 'Production'"
+                title="Display Title (internal use only)"
+                description={
+                  <>
+                    This should be the environment you are deploying to, like{' '}
+                    <em>Production</em> or <em>Staging</em>
+                  </>
+                }
               >
                 <TextInput
                   type="text"
@@ -530,7 +535,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
 
               <FormField
                 title="Vercel Project Name"
-                description="The exact name of the associated project on Vercel"
+                description={`Vercel Project: Settings → General → "Project Name"`}
               >
                 <TextInput
                   type="text"
@@ -547,8 +552,8 @@ const DeployItem: React.FC<DeployItemProps> = ({
               </FormField>
 
               <FormField
-                title="Vercel Team Slug"
-                description="Required for projects under a Vercel Team (use team page URL slug)"
+                title="Vercel Team Name"
+                description={`Required for projects under a Vercel Team: Settings → General → "Team Name"`}
               >
                 <TextInput
                   type="text"
@@ -566,7 +571,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
 
               <FormField
                 title="Deploy Hook URL"
-                description="The Vercel deploy hook URL from your project's Git settings"
+                description={`Vercel Project: Settings → Git → "Deploy Hooks"`}
               >
                 <TextInput
                   type="text"

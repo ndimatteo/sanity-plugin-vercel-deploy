@@ -142,8 +142,13 @@ const VercelDeploy = () => {
                 Object.prototype.hasOwnProperty.call(item, 'delete')
               )
 
-              const deployFilter = (deploy: SanityDeploySchema) =>
+              const filterDeploy = (deploy: SanityDeploySchema) =>
                 deploy._id !== res.documentId
+
+              const updateDeploy = (deploy: SanityDeploySchema) =>
+                deploy._id === res.documentId
+                  ? (res.result as SanityDeploySchema)
+                  : deploy
 
               if (wasCreated) {
                 setDeploys((prevState) => {
@@ -155,17 +160,13 @@ const VercelDeploy = () => {
               }
               if (wasPatched) {
                 setDeploys((prevState) => {
-                  const filteredDeploys = prevState.filter(deployFilter)
+                  const updatedDeploys = prevState.map(updateDeploy)
 
-                  if (res.result) {
-                    return [...filteredDeploys, res.result]
-                  }
-
-                  return filteredDeploys
+                  return updatedDeploys
                 })
               }
               if (wasDeleted) {
-                setDeploys((prevState) => prevState.filter(deployFilter))
+                setDeploys((prevState) => prevState.filter(filterDeploy))
               }
             }
           },
