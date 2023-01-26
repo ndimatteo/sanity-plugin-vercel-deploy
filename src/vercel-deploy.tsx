@@ -338,7 +338,7 @@ const VercelDeploy = () => {
 
                         <Text size={1} weight="semibold" muted>
                           <a
-                            href="https://github.com/ndimatteo/sanity-plugin-vercel-deploy#your-first-vercel-deployment"
+                            href="https://github.com/ndimatteo/sanity-plugin-vercel-deploy#-your-first-vercel-deployment"
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{ color: 'inherit' }}
