@@ -6,7 +6,7 @@
 ✨ LIVE status updates ✨ multiple deployments ✨ active polling ✨ Vercel Teams support ✨
 </p>
 
-![vercel-deploy-v3](https://user-images.githubusercontent.com/737188/214717596-ea116fc1-a5e4-469e-8f9b-4173a3bc9689.png)
+![vercel-deploy-v3](https://user-images.githubusercontent.com/737188/214927717-ba84450f-8359-401c-acf0-08eeafc22881.png)
 
 <br />
 
