@@ -3,7 +3,6 @@ import { nanoid } from 'nanoid'
 import { useEffect, useState } from 'react'
 import { type Subscription } from 'rxjs'
 
-import { WarningOutlineIcon } from '@sanity/icons'
 import {
   Box,
   Button,
@@ -12,8 +11,6 @@ import {
   Dialog,
   Flex,
   Grid,
-  Heading,
-  Inline,
   Spinner,
   Stack,
   studioTheme,
@@ -501,25 +498,6 @@ const VercelDeploy = () => {
                     </Flex>
                   </Card>
                 </FormField>
-
-                <Card
-                  padding={4}
-                  paddingBottom={5}
-                  radius={3}
-                  shadow={1}
-                  tone="caution"
-                >
-                  <Box marginBottom={2} style={{ textAlign: 'center' }}>
-                    <Inline space={1}>
-                      <WarningOutlineIcon style={{ fontSize: 24 }} />
-                      <Heading size={1}>Careful!</Heading>
-                    </Inline>
-                  </Box>
-                  <Text size={1} align="center">
-                    Once you create this deployment you will not be able to edit
-                    it.
-                  </Text>
-                </Card>
               </Stack>
             </Box>
           </Dialog>
