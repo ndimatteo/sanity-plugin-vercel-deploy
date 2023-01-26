@@ -21,7 +21,7 @@ import {
   ToastProvider,
   useToast,
 } from '@sanity/ui'
-import { FormField } from 'sanity'
+import { FormField, useColorScheme } from 'sanity'
 
 import DeployItem from './deploy-item'
 import { useClient } from './hook/useClient'
@@ -40,6 +40,7 @@ const VercelDeploy = () => {
   const WEBHOOK_TYPE = 'webhook_deploy'
   const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
   const client = useClient()
+  const { scheme } = useColorScheme()
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -180,6 +181,8 @@ const VercelDeploy = () => {
     }
   }, [WEBHOOK_QUERY, client])
 
+  console.log(scheme)
+
   return (
     <ThemeProvider theme={studioTheme}>
       <ToastProvider>
@@ -275,9 +278,9 @@ const VercelDeploy = () => {
                         viewBox="0 0 260 235"
                       >
                         <path
-                          fill="white"
+                          fill={scheme === 'dark' ? 'transparent' : 'white'}
                           fillRule="evenodd"
-                          stroke="black"
+                          stroke={scheme === 'dark' ? 'white' : 'black'}
                           strokeDasharray="4 4"
                           strokeWidth="2"
                           d="M107.36 2.48l105.7 185.47H2.66L108.35 2.48z"
@@ -286,12 +289,12 @@ const VercelDeploy = () => {
                         <ellipse
                           cx="182.68"
                           cy="156.48"
-                          fill="white"
+                          fill="transparent"
                           rx="74.32"
                           ry="74.52"
                         />
                         <path
-                          stroke="black"
+                          stroke={scheme === 'dark' ? 'white' : 'black'}
                           strokeWidth="2"
                           d="M256.5 156.48c0 40.88-33.05 74.02-73.82 74.02-40.77 0-73.83-33.14-73.83-74.02 0-40.87 33.06-74.01 73.83-74.01 40.77 0 73.82 33.14 73.82 74.01z"
                         />
@@ -307,14 +310,14 @@ const VercelDeploy = () => {
                           <ellipse
                             cx="182.68"
                             cy="156.48"
-                            fill="#fff"
+                            fill="white"
                             rx="74.32"
                             ry="74.52"
                           />
                         </mask>
                         <g mask="url(#a)">
                           <path
-                            fill="black"
+                            fill={scheme === 'dark' ? 'white' : 'black'}
                             fillRule="evenodd"
                             d="M108.36 2.48l105.7 185.47H2.66L108.35 2.48z"
                             clipRule="evenodd"
@@ -323,7 +326,7 @@ const VercelDeploy = () => {
                       </svg>
 
                       <Flex direction="column" align="center" padding={4}>
-                        <Text size={2}>No deployments created yet.</Text>
+                        <Text size={3}>No deployments created yet.</Text>
                         <Box padding={4}>
                           <Button
                             fontSize={3}
