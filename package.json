@@ -44,7 +44,7 @@
     "clean": "rimraf dist",
     "format": "prettier --write --cache --ignore-unknown .",
     "link-watch": "plugin-kit link-watch",
-    "lint": "eslint .",
+    "lint": "eslint '**/*.+(ts|js|tsx|jsx)'",
     "prepublishOnly": "run-s build",
     "watch": "pkg-utils watch --strict"
   },
