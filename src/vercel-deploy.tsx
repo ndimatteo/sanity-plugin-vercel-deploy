@@ -3,7 +3,6 @@ import { nanoid } from 'nanoid'
 import { useEffect, useState } from 'react'
 import { type Subscription } from 'rxjs'
 
-import { WarningOutlineIcon } from '@sanity/icons'
 import {
   Box,
   Button,
@@ -12,13 +11,11 @@ import {
   Dialog,
   Flex,
   Grid,
-  Heading,
-  Inline,
   Spinner,
   Stack,
   studioTheme,
-  Text,
   Switch,
+  Text,
   TextInput,
   ThemeProvider,
   ToastProvider,
@@ -137,9 +134,21 @@ const VercelDeploy = () => {
                 Object.prototype.hasOwnProperty.call(item, 'create')
               )
 
+              const wasPatched = res.mutations.some((item) =>
+                Object.prototype.hasOwnProperty.call(item, 'patch')
+              )
+
               const wasDeleted = res.mutations.some((item) =>
                 Object.prototype.hasOwnProperty.call(item, 'delete')
               )
+
+              const filterDeploy = (deploy: SanityDeploySchema) =>
+                deploy._id !== res.documentId
+
+              const updateDeploy = (deploy: SanityDeploySchema) =>
+                deploy._id === res.documentId
+                  ? (res.result as SanityDeploySchema)
+                  : deploy
 
               if (wasCreated) {
                 setDeploys((prevState) => {
@@ -149,10 +158,15 @@ const VercelDeploy = () => {
                   return prevState
                 })
               }
+              if (wasPatched) {
+                setDeploys((prevState) => {
+                  const updatedDeploys = prevState.map(updateDeploy)
+
+                  return updatedDeploys
+                })
+              }
               if (wasDeleted) {
-                setDeploys((prevState) =>
-                  prevState.filter((w) => w._id !== res.documentId)
-                )
+                setDeploys((prevState) => prevState.filter(filterDeploy))
               }
             }
           },
@@ -160,11 +174,11 @@ const VercelDeploy = () => {
     })
 
     return () => {
-      webhookSubscription && webhookSubscription.unsubscribe()
+      if (webhookSubscription) {
+        webhookSubscription.unsubscribe()
+      }
     }
-  }, [])
-
-  console.log({ pendingDeploy })
+  }, [WEBHOOK_QUERY, client])
 
   return (
     <ThemeProvider theme={studioTheme}>
@@ -191,13 +205,13 @@ const VercelDeploy = () => {
                       width="32"
                       height="32"
                       stroke="currentColor"
-                      stroke-width="1"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       fill="none"
-                      shape-rendering="geometricPrecision"
+                      shapeRendering="geometricPrecision"
                     >
-                      <path d="M16.88 3.549L7.12 20.451"></path>
+                      <path d="M16.88 3.549L7.12 20.451" />
                     </svg>
                   </Card>
                   <Card>
@@ -501,25 +515,6 @@ const VercelDeploy = () => {
                     </Flex>
                   </Card>
                 </FormField>
-
-                <Card
-                  padding={4}
-                  paddingBottom={5}
-                  radius={3}
-                  shadow={1}
-                  tone="caution"
-                >
-                  <Box marginBottom={2} style={{ textAlign: 'center' }}>
-                    <Inline space={1}>
-                      <WarningOutlineIcon style={{ fontSize: 24 }} />
-                      <Heading size={1}>Careful!</Heading>
-                    </Inline>
-                  </Box>
-                  <Text size={1} align="center">
-                    Once you create this deployment you will not be able to edit
-                    it.
-                  </Text>
-                </Card>
               </Stack>
             </Box>
           </Dialog>

@@ -11,6 +11,7 @@ export type StatusType =
 
 export interface VercelTeam {
   [key: string]: unknown
+  slug: string
   name: string
   id: string
 }
