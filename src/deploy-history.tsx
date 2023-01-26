@@ -20,9 +20,7 @@ import DeployStatus from './deploy-status'
 import type { Deployments, SanityDeploySchema } from './types'
 
 interface DeployHistoryProps
-  extends Omit<SanityDeploySchema, '_id' | 'name' | 'disableDeleteAction'> {
-  hookContext?: any
-}
+  extends Omit<SanityDeploySchema, '_id' | 'name' | 'disableDeleteAction'> {}
 const DeployHistory: React.FC<DeployHistoryProps> = ({
   url,
   vercelProject,
@@ -61,7 +59,7 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
         setError(true)
         console.warn(e)
       })
-  }, [vercelProject])
+  }, [url, vercelProject, vercelTeam?.id, vercelToken])
 
   if (loading) {
     return (
@@ -120,6 +118,7 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
                   <a
                     href={`https://${deployment.url}`}
                     target="_blank"
+                    rel="noopener noreferrer"
                     style={{ color: 'inherit' }}
                   >
                     {deployment.url}

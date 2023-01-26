@@ -596,7 +596,6 @@ const DeployItem: React.FC<DeployItemProps> = ({
             vercelProject={projectData.id}
             vercelToken={vercelToken}
             vercelTeam={vercelTeam}
-            hookContext={deploymentData?.deployments[0]?.meta.deployHookName}
           />
         </Dialog>
       )}

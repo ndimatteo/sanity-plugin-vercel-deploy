@@ -17,8 +17,8 @@ import {
   Spinner,
   Stack,
   studioTheme,
-  Text,
   Switch,
+  Text,
   TextInput,
   ThemeProvider,
   ToastProvider,
@@ -150,9 +150,9 @@ const VercelDeploy = () => {
                 })
               }
               if (wasDeleted) {
-                setDeploys((prevState) =>
-                  prevState.filter((w) => w._id !== res.documentId)
-                )
+                const deployFilter = (deploy: SanityDeploySchema) =>
+                  deploy._id !== res.documentId
+                setDeploys((prevState) => prevState.filter(deployFilter))
               }
             }
           },
@@ -160,11 +160,11 @@ const VercelDeploy = () => {
     })
 
     return () => {
-      webhookSubscription && webhookSubscription.unsubscribe()
+      if (webhookSubscription) {
+        webhookSubscription.unsubscribe()
+      }
     }
-  }, [])
-
-  console.log({ pendingDeploy })
+  }, [WEBHOOK_QUERY, client])
 
   return (
     <ThemeProvider theme={studioTheme}>
@@ -191,13 +191,13 @@ const VercelDeploy = () => {
                       width="32"
                       height="32"
                       stroke="currentColor"
-                      stroke-width="1"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       fill="none"
-                      shape-rendering="geometricPrecision"
+                      shapeRendering="geometricPrecision"
                     >
-                      <path d="M16.88 3.549L7.12 20.451"></path>
+                      <path d="M16.88 3.549L7.12 20.451" />
                     </svg>
                   </Card>
                   <Card>
