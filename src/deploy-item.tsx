@@ -2,9 +2,13 @@ import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import spacetime from 'spacetime'
 import useSWR from 'swr'
-import { isDev } from 'sanity'
 
-import { ClockIcon, EllipsisVerticalIcon, TrashIcon } from '@sanity/icons'
+import {
+  ClockIcon,
+  EditIcon,
+  EllipsisVerticalIcon,
+  TrashIcon,
+} from '@sanity/icons'
 import {
   Badge,
   Box,
@@ -12,6 +16,7 @@ import {
   Code,
   Dialog,
   Flex,
+  Grid,
   Heading,
   Inline,
   Menu,
@@ -19,10 +24,12 @@ import {
   MenuItem,
   Stack,
   Text,
+  TextInput,
   Tooltip,
   useToast,
 } from '@sanity/ui'
 
+import { FormField } from 'sanity'
 import DeployHistory from './deploy-history'
 import DeployStatus from './deploy-status'
 import { useClient } from './hook/useClient'
@@ -38,8 +45,16 @@ const fetcher = (url: string, token: string) =>
     })
     .then((res) => res.data)
 
+const initialDeploy = {
+  title: '',
+  project: '',
+  team: '',
+  url: '',
+  token: '',
+}
+
 interface DeployItemProps extends SanityDeploySchema {}
-const deployItem: React.FC<DeployItemProps> = ({
+const DeployItem: React.FC<DeployItemProps> = ({
   name,
   url,
   _id,
@@ -53,6 +68,11 @@ const deployItem: React.FC<DeployItemProps> = ({
   const [isLoading, setIsLoading] = useState(true)
   const [isDeploying, setDeploying] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+
+  const [pendingDeploy, setpendingDeploy] = useState(initialDeploy)
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [status, setStatus] = useState<StatusType>('LOADING')
   const [timestamp, setTimestamp] = useState<string | null>(null)
@@ -71,9 +91,8 @@ const deployItem: React.FC<DeployItemProps> = ({
     {
       errorRetryCount: 3,
       onError: (err) => {
-        const errorMessage = err.response?.data?.error?.message
         setStatus('ERROR')
-        setErrorMessage(errorMessage)
+        setErrorMessage(err.response?.data?.error?.message)
         setIsLoading(false)
       },
     }
@@ -93,15 +112,14 @@ const deployItem: React.FC<DeployItemProps> = ({
       errorRetryCount: 3,
       refreshInterval: isDeploying ? 5000 : 0,
       onError: (err) => {
-        const errorMessage = err.response?.data?.error?.message
         setStatus('ERROR')
-        setErrorMessage(errorMessage)
+        setErrorMessage(err.response?.data?.error?.message)
         setIsLoading(false)
       },
     }
   )
 
-  const onDeploy = (name: string, url: string) => {
+  const onDeploy = (_name: string, _url: string) => {
     setStatus('INITIATED')
     setDeploying(true)
     setTimestamp(null)
@@ -113,7 +131,7 @@ const deployItem: React.FC<DeployItemProps> = ({
         toast.push({
           status: 'success',
           title: 'Success!',
-          description: `Triggered Deployment: ${name}`,
+          description: `Triggered Deployment: ${_name}`,
         })
       })
       .catch((err) => {
@@ -148,14 +166,91 @@ const deployItem: React.FC<DeployItemProps> = ({
       })
   }
 
-  const onRemove = (name: string, id: string) => {
+  const onRemove = (_name: string, id: string) => {
     setIsLoading(true)
     client.delete(id).then(() => {
       toast.push({
         status: 'success',
-        title: `Successfully deleted deployment: ${name}`,
+        title: `Successfully deleted deployment: ${_name}`,
       })
     })
+  }
+
+  const onEdit = () => {
+    setpendingDeploy({
+      title: name,
+      project: vercelProject,
+      team: vercelTeam?.slug,
+      url,
+      token: vercelToken,
+    })
+    setIsFormOpen(true)
+  }
+
+  const onSubmitEdit = async () => {
+    // If we have a team slug, we'll have to get the associated teamId to include in every new request
+    // Docs: https://vercel.com/docs/api#api-basics/authentication/accessing-resources-owned-by-a-team
+    let vercelTeamID
+    let vercelTeamName
+    setIsSubmitting(true)
+
+    if (pendingDeploy.team) {
+      try {
+        const fetchTeam = await axios.get(
+          `https://api.vercel.com/v2/teams?slug=${pendingDeploy.team}`,
+          {
+            headers: {
+              Authorization: `Bearer ${pendingDeploy.token}`,
+            },
+          }
+        )
+
+        if (!fetchTeam?.data?.id) {
+          throw new Error('No team id found')
+        }
+
+        vercelTeamID = fetchTeam.data.id
+        vercelTeamName = fetchTeam.data.name
+      } catch (error) {
+        console.error(error)
+        setIsSubmitting(false)
+
+        toast.push({
+          status: 'error',
+          title: 'No Team found!',
+          closable: true,
+          description:
+            'Make sure the token you provided is valid and that the team’s slug correspond to the one you see in Vercel',
+        })
+
+        return
+      }
+    }
+
+    client
+      .patch(_id)
+      .set({
+        name: pendingDeploy.title,
+        url: pendingDeploy.url,
+        vercelProject: pendingDeploy.project,
+        vercelTeam: {
+          slug: pendingDeploy.team || undefined,
+          name: vercelTeamName || undefined,
+          id: vercelTeamID || undefined,
+        },
+        vercelToken: pendingDeploy.token,
+      })
+      .commit()
+      .then(() => {
+        toast.push({
+          status: 'success',
+          title: 'Success!',
+          description: `Updated Deployment: ${pendingDeploy.title}`,
+        })
+
+        setIsFormOpen(false)
+        setIsSubmitting(false)
+      })
   }
 
   // set status when new deployment data comes in
@@ -197,9 +292,9 @@ const deployItem: React.FC<DeployItemProps> = ({
   }, [status])
 
   // count build time
-  const tick = (timestamp: string | null) => {
-    if (timestamp) {
-      setBuildTime(spacetime.now().since(spacetime(timestamp)).rounded)
+  const tick = (_timestamp: string | null) => {
+    if (_timestamp) {
+      setBuildTime(spacetime.now().since(spacetime(_timestamp)).rounded)
     }
   }
 
@@ -300,6 +395,7 @@ const deployItem: React.FC<DeployItemProps> = ({
                   </DeployStatus>
 
                   <Text align="right" size={1} muted>
+                    {/* eslint-disable-next-line no-nested-ternary */}
                     {isDeploying
                       ? buildTime || '--'
                       : timestamp
@@ -326,9 +422,9 @@ const deployItem: React.FC<DeployItemProps> = ({
               <Button
                 type="button"
                 tone="critical"
-                onClick={() =>
+                onClick={() => {
                   onCancel(deploymentData.deployments[0].uid, vercelToken)
-                }
+                }}
                 radius={3}
                 text="Cancel"
               />
@@ -352,6 +448,12 @@ const deployItem: React.FC<DeployItemProps> = ({
                     onClick={() => setIsHistoryOpen(true)}
                     disabled={!deploymentData?.deployments.length}
                   />
+                  <MenuItem
+                    text="Edit"
+                    icon={EditIcon}
+                    tone="primary"
+                    onClick={() => onEdit()}
+                  />
 
                   {!disableDeleteAction && (
                     <MenuItem
@@ -367,6 +469,119 @@ const deployItem: React.FC<DeployItemProps> = ({
           </Inline>
         </Flex>
       </Flex>
+
+      {isFormOpen && (
+        <Dialog
+          header="Edit Project Deployment"
+          id="update-webhook"
+          width={1}
+          onClickOutside={() => setIsFormOpen(false)}
+          onClose={() => setIsFormOpen(false)}
+          footer={
+            <Box padding={3}>
+              <Grid columns={2} gap={3}>
+                <Button
+                  padding={4}
+                  mode="ghost"
+                  text="Cancel"
+                  onClick={() => setIsFormOpen(false)}
+                />
+                <Button
+                  padding={4}
+                  text="Create"
+                  tone="primary"
+                  loading={isSubmitting}
+                  onClick={() => onSubmitEdit()}
+                  disabled={
+                    isSubmitting ||
+                    !pendingDeploy.project ||
+                    !pendingDeploy.url ||
+                    !pendingDeploy.token
+                  }
+                />
+              </Grid>
+            </Box>
+          }
+        >
+          <Box padding={4}>
+            <Stack space={4}>
+              <FormField
+                title="Display Title"
+                description="Give your deploy a name, like 'Production'"
+              >
+                <TextInput
+                  type="text"
+                  value={pendingDeploy.title}
+                  onChange={(e) => {
+                    e.persist()
+                    const title = (e.target as HTMLInputElement).value
+                    setpendingDeploy((prevState) => ({
+                      ...prevState,
+                      ...{ title },
+                    }))
+                  }}
+                />
+              </FormField>
+
+              <FormField
+                title="Vercel Project Name"
+                description="The exact name of the associated project on Vercel"
+              >
+                <TextInput
+                  type="text"
+                  value={pendingDeploy.project}
+                  onChange={(e) => {
+                    e.persist()
+                    const project = (e.target as HTMLInputElement).value
+                    setpendingDeploy((prevState) => ({
+                      ...prevState,
+                      ...{ project },
+                    }))
+                  }}
+                />
+              </FormField>
+
+              <FormField
+                title="Vercel Team Slug"
+                description="Required for projects under a Vercel Team (use team page URL slug)"
+              >
+                <TextInput
+                  type="text"
+                  value={pendingDeploy.team}
+                  onChange={(e) => {
+                    e.persist()
+                    const team = (e.target as HTMLInputElement).value
+                    setpendingDeploy((prevState) => ({
+                      ...prevState,
+                      ...{ team },
+                    }))
+                  }}
+                />
+              </FormField>
+
+              <FormField
+                title="Deploy Hook URL"
+                description="The Vercel deploy hook URL from your project's Git settings"
+              >
+                <TextInput
+                  type="text"
+                  inputMode="url"
+                  value={pendingDeploy.url}
+                  onChange={(e) => {
+                    e.persist()
+                    const pendingDeployUrl = (e.target as HTMLInputElement)
+                      .value
+                    setpendingDeploy((prevState) => ({
+                      ...prevState,
+                      ...{ url: pendingDeployUrl },
+                    }))
+                  }}
+                />
+              </FormField>
+            </Stack>
+          </Box>
+        </Dialog>
+      )}
 
       {isHistoryOpen && (
         <Dialog
@@ -389,4 +604,4 @@ const deployItem: React.FC<DeployItemProps> = ({
   )
 }
 
-export default deployItem
+export default DeployItem
