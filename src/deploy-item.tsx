@@ -13,6 +13,7 @@ import {
   Badge,
   Box,
   Button,
+  Card,
   Code,
   Dialog,
   Flex,
@@ -23,6 +24,7 @@ import {
   MenuButton,
   MenuItem,
   Stack,
+  Switch,
   Text,
   TextInput,
   Tooltip,
@@ -51,6 +53,7 @@ const initialDeploy = {
   team: '',
   url: '',
   token: '',
+  disableDeleteAction: false,
 }
 
 interface DeployItemProps extends SanityDeploySchema {}
@@ -183,6 +186,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
       team: vercelTeam?.slug,
       url,
       token: vercelToken,
+      disableDeleteAction,
     })
     setIsFormOpen(true)
   }
@@ -239,6 +243,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
           id: vercelTeamID || undefined,
         },
         vercelToken: pendingDeploy.token,
+        disableDeleteAction: pendingDeploy.disableDeleteAction,
       })
       .commit()
       .then(() => {
@@ -488,7 +493,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
                 />
                 <Button
                   padding={4}
-                  text="Create"
+                  text="Edit"
                   tone="primary"
                   loading={isSubmitting}
                   onClick={() => onSubmitEdit()}
@@ -577,6 +582,35 @@ const DeployItem: React.FC<DeployItemProps> = ({
                     }))
                   }}
                 />
+              </FormField>
+
+              <FormField>
+                <Card paddingY={3}>
+                  <Flex align="center">
+                    <Switch
+                      id="disableDeleteAction"
+                      style={{ display: 'block' }}
+                      onChange={(e) => {
+                        e.persist()
+                        const isChecked = (e.target as HTMLInputElement).checked
+
+                        setpendingDeploy((prevState) => ({
+                          ...prevState,
+                          ...{ disableDeleteAction: isChecked },
+                        }))
+                      }}
+                      checked={pendingDeploy.disableDeleteAction}
+                    />
+                    <Box flex={1} paddingLeft={3}>
+                      <Text>
+                        <label htmlFor="disableDeleteAction">
+                          Disable the "Delete" action for this item in
+                          production?
+                        </label>
+                      </Text>
+                    </Box>
+                  </Flex>
+                </Card>
               </FormField>
             </Stack>
           </Box>
