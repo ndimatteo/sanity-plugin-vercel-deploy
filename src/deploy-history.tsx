@@ -41,7 +41,7 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
       .get(
         `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&meta-deployHookId=${url
           .split('/')
-          .pop()}&limit=6${vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''}`,
+          .pop().split('?').shift()}&limit=6${vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''}`,
         {
           headers: {
             'content-type': 'application/json',
