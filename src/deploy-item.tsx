@@ -105,7 +105,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
     () => [
       `https://api.vercel.com/v5/now/deployments?projectId=${
         projectData.id
-      }&meta-deployHookId=${url.split('/').pop()}&limit=1${
+      }&meta-deployHookId=${url.split('/').pop().split('?').shift()}&limit=1${
         vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
       }`,
       vercelToken,
