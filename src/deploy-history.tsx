@@ -31,6 +31,8 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
 
+  const deployHookId = url?.split('/').pop()?.split('?').shift()
+
   useEffect(() => {
     if (!vercelProject) {
       return
@@ -39,9 +41,9 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
 
     axios
       .get(
-        `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&meta-deployHookId=${url
-          .split('/')
-          .pop().split('?').shift()}&limit=6${vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''}`,
+        `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&meta-deployHookId=${deployHookId}&limit=6${
+          vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
+        }`,
         {
           headers: {
             'content-type': 'application/json',

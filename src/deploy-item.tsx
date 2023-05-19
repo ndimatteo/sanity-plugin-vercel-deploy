@@ -83,6 +83,8 @@ const DeployItem: React.FC<DeployItemProps> = ({
 
   const toast = useToast()
 
+  const deployHookId = url?.split('/').pop()?.split('?').shift()
+
   const { data: projectData } = useSWR(
     [
       `https://api.vercel.com/v8/projects/${vercelProject}${
@@ -105,7 +107,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
     () => [
       `https://api.vercel.com/v5/now/deployments?projectId=${
         projectData.id
-      }&meta-deployHookId=${url.split('/').pop().split('?').shift()}&limit=1${
+      }&meta-deployHookId=${deployHookId}&limit=1${
         vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
       }`,
       vercelToken,
