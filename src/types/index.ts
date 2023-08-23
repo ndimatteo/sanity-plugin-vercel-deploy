@@ -46,8 +46,18 @@ export interface Deployments {
   }
 }
 
+export interface DefaultDeploy {
+  name: string
+  projectName: string
+  teamName: string
+  url: string
+  token: string
+  disableDelete: boolean
+}
+
 export interface VercelDeployConfig {
   name?: string
   icon?: React.ReactNode
   title?: string
+  defaultDeploy?: DefaultDeploy | Array<DefaultDeploy>
 }

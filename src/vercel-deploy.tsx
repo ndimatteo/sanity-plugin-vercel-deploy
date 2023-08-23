@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { nanoid } from 'nanoid'
 import { useEffect, useState } from 'react'
 import { type Subscription } from 'rxjs'
 
@@ -26,6 +25,7 @@ import { FormField, useColorScheme } from 'sanity'
 import DeployItem from './deploy-item'
 import { useClient } from './hook/useClient'
 import type { SanityDeploySchema } from './types'
+import { createDeploy } from './utils'
 
 const initialDeploy = {
   title: '',
@@ -89,12 +89,8 @@ const VercelDeploy = () => {
       }
     }
 
-    client
-      .create({
-        // Explicitly define an _id inside the vercel-deploy path to make sure it's not publicly accessible
-        // This will protect users' tokens & project info. Read more: https://www.sanity.io/docs/ids
-        _id: `vercel-deploy.${nanoid()}`,
-        _type: WEBHOOK_TYPE,
+    createDeploy(client, {
+      doc: {
         name: pendingDeploy.title,
         url: pendingDeploy.url,
         vercelProject: pendingDeploy.project,
@@ -105,17 +101,17 @@ const VercelDeploy = () => {
         },
         vercelToken: pendingDeploy.token,
         disableDeleteAction: pendingDeploy.disableDeleteAction,
+      },
+    }).then(() => {
+      toast.push({
+        status: 'success',
+        title: 'Success!',
+        description: `Created Deployment: ${pendingDeploy.title}`,
       })
-      .then(() => {
-        toast.push({
-          status: 'success',
-          title: 'Success!',
-          description: `Created Deployment: ${pendingDeploy.title}`,
-        })
-        setIsFormOpen(false)
-        setIsSubmitting(false)
-        setpendingDeploy(initialDeploy) // Reset the pending webhook state
-      })
+      setIsFormOpen(false)
+      setIsSubmitting(false)
+      setpendingDeploy(initialDeploy) // Reset the pending webhook state
+    })
   }
 
   // Fetch all existing webhooks and listen for newly created
