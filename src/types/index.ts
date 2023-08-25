@@ -57,7 +57,7 @@ export interface DefaultDeploy {
 
 export interface VercelDeployConfig {
   name?: string
-  icon?: React.ReactNode
+  icon?: React.ComponentType
   title?: string
   defaultDeploy?: DefaultDeploy | Array<DefaultDeploy>
 }
