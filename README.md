@@ -38,6 +38,45 @@ export default defineConfig({
 })
 ```
 
+### Systematically adding deployments
+
+You can pass in deployments that should already be added into the app (refresh the site after the initial load).
+
+**Make sure the projectNames are unique.**
+
+```ts
+vercelDeploy({
+  defaultDeploy: {
+    name: 'production',
+    projectName: 'project',
+    teamName: 'john-doe',
+    token: process.env.SANITY_STUDIO_VERCEL_TOKEN,
+    url: 'https://john-doe.vercel.app',
+    disableDelete: false,
+  },
+})
+vercelDeploy({
+  defaultDeploy: [
+    {
+      name: 'production',
+      projectName: 'project 1',
+      teamName: 'john-doe',
+      token: process.env.SANITY_STUDIO_VERCEL_TOKEN,
+      url: 'https://john-doe.vercel.app',
+      disableDelete: false,
+    },
+    {
+      name: 'production',
+      projectName: 'project 1',
+      teamName: 'jane-doe',
+      token: process.env.SANITY_STUDIO_VERCEL_TOKEN,
+      url: 'https://jane-doe.vercel.app',
+      disableDelete: false,
+    },
+  ],
+})
+```
+
 <br />
 
 ## 🚀 Your first Vercel Deployment

@@ -11,19 +11,22 @@ export type StatusType =
 
 export interface VercelTeam {
   [key: string]: unknown
-  slug: string
-  name: string
-  id: string
+  slug?: string
+  name?: string
+  id?: string
 }
 
-export interface SanityDeploySchema {
-  _id: string
+export interface DeploySchema {
   name: string
   url: string
   vercelProject: string
   vercelTeam: VercelTeam
   vercelToken: string
   disableDeleteAction: boolean
+}
+
+export interface SanityDeploySchema extends DeploySchema {
+  _id: string
 }
 
 export interface Deployments {
@@ -43,8 +46,18 @@ export interface Deployments {
   }
 }
 
+export interface DefaultDeploy {
+  name: string
+  projectName: string
+  teamName: string
+  url: string
+  token: string
+  disableDelete: boolean
+}
+
 export interface VercelDeployConfig {
   name?: string
-  icon?: React.ReactNode
+  icon?: React.ComponentType
   title?: string
+  defaultDeploy?: DefaultDeploy | Array<DefaultDeploy>
 }

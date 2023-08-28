@@ -47,7 +47,14 @@ const fetcher = (url: string, token: string) =>
     })
     .then((res) => res.data)
 
-const initialDeploy = {
+const initialDeploy: {
+  title: string
+  project: string
+  team?: string
+  url: string
+  token: string
+  disableDeleteAction: boolean
+} = {
   title: '',
   project: '',
   team: '',
