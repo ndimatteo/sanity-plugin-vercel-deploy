@@ -433,8 +433,8 @@ const VercelDeploy = () => {
                 </FormField>
 
                 <FormField
-                  title="Vercel Team Name"
-                  description={`Required for projects under a Vercel Team: Settings → General → "Team Name"`}
+                  title="Vercel Team URL"
+                  description={`Required for projects under a Vercel Team: Settings → General → "Team URL"`}
                 >
                   <TextInput
                     type="text"
