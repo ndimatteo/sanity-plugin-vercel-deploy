@@ -44,7 +44,7 @@
     "clean": "rimraf dist",
     "format": "prettier --write --cache --ignore-unknown .",
     "link-watch": "plugin-kit link-watch",
-    "lint": "eslint '**/*.+(ts|js|tsx|jsx)'",
+    "lint": "eslint --cache --ext .js,.ts,.tsx .",
     "prepublishOnly": "run-s build",
     "watch": "pkg-utils watch --strict"
   },
@@ -55,7 +55,7 @@
     "axios": "^0.24.0",
     "nanoid": "^3.1.20",
     "prop-types": "^15.7.2",
-    "spacetime": "^6.16.0",
+    "spacetime": "^7.5.0",
     "swr": "^1.1.1"
   },
   "devDependencies": {
