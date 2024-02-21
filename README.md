@@ -56,10 +56,10 @@ _Typically, this should be the environment you are deploying to, like `Productio
 This is the slugified project name listed in your Vercel account. <br />
 _You can find this in your Vercel Project under Settings → General → "Project Name"_
 
-#### `Vercel Team Name` _(optional)_
+#### `Vercel Team URL` _(optional)_
 
 If your project is part of a Vercel Team you must provide this value. <br />
-_You can find this in your Vercel Team, under Settings → General → "Team Name"_
+_You can find this in your Vercel Team, under Settings → General → "Team URL"_
 
 #### `Deploy Hook URL`
 
