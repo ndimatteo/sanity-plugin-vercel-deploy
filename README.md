@@ -1,6 +1,7 @@
-<h3 align="center">
-  Vercel Deployment for Sanity
-</h3>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/7f678484-2b59-4b5a-ba25-17f31512fab5" align="center" height="30" />
+</p>
+
 <p align="center">
   <strong>Trigger Vercel Deploy Hooks from your Sanity V3 Studio.</strong><br />
 ✨ LIVE status updates ✨ multiple deployments ✨ active polling ✨ Vercel Teams support ✨
