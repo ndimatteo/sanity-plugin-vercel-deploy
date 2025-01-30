@@ -86,13 +86,13 @@ const DeployItem: React.FC<DeployItemProps> = ({
   const deployHookId = url?.split('/').pop()?.split('?').shift()
 
   const { data: projectData } = useSWR(
-    [
-      `https://api.vercel.com/v8/projects/${vercelProject}${
+    {
+      path: `https://api.vercel.com/v8/projects/${vercelProject}${
         vercelTeam?.id ? `?teamId=${vercelTeam?.id}` : ''
       }`,
-      vercelToken,
-    ],
-    (path, token) => fetcher(path, token),
+      token: vercelToken,
+    },
+    ({ path, token }) => fetcher(path, token),
     {
       errorRetryCount: 3,
       onError: (err) => {
@@ -104,15 +104,15 @@ const DeployItem: React.FC<DeployItemProps> = ({
   )
 
   const { data: deploymentData } = useSWR(
-    () => [
-      `https://api.vercel.com/v5/now/deployments?projectId=${
-        projectData.id
+    {
+      path: `https://api.vercel.com/v5/now/deployments?projectId=${
+        projectData?.id
       }&meta-deployHookId=${deployHookId}&limit=1${
         vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
       }`,
-      vercelToken,
-    ],
-    (path, token) => fetcher(path, token),
+      token: vercelToken,
+    },
+    ({ path, token }) => fetcher(path, token),
     {
       errorRetryCount: 3,
       refreshInterval: isDeploying ? 5000 : 0,
@@ -215,8 +215,8 @@ const DeployItem: React.FC<DeployItemProps> = ({
           throw new Error('No team id found')
         }
 
-        vercelTeamID = fetchTeam.data.id
-        vercelTeamName = fetchTeam.data.name
+        vercelTeamID = fetchTeam.data?.id
+        vercelTeamName = fetchTeam.data?.name
       } catch (error) {
         console.error(error)
         setIsSubmitting(false)
@@ -634,7 +634,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
         >
           <DeployHistory
             url={url}
-            vercelProject={projectData.id}
+            vercelProject={projectData?.id}
             vercelToken={vercelToken}
             vercelTeam={vercelTeam}
           />
