@@ -1,6 +1,8 @@
 import React from 'react'
 
-import { Badge, BadgeMode, BadgeTone, Flex, type FlexJustify } from '@sanity/ui'
+import { Badge, Flex, Text } from '@sanity/ui'
+
+import type { BadgeTone, FlexJustify } from '@sanity/ui'
 
 type DeployStatusProps = {
   status: string
@@ -33,17 +35,10 @@ const DeployStatus: React.FC<DeployStatusProps> = ({
       QUEUED: 'default',
     }[status] as BadgeTone) || 'default'
 
-  const badgeMode =
-    ({
-      LOADING: 'outline',
-      READY: 'outline',
-      CANCELED: 'outline',
-    }[status] as BadgeMode) || 'default'
-
   return (
     <Flex wrap="nowrap" align="center" justify={justify}>
-      <Badge mode={badgeMode} tone={badgeTone} padding={2} fontSize={1}>
-        {titleCase(status)}
+      <Badge tone={badgeTone} padding={2} radius={2}>
+        <span style={{ fontWeight: 500 }}>{titleCase(status)}</span>
       </Badge>
       {children}
     </Flex>

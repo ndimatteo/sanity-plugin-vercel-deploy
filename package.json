@@ -1,6 +1,7 @@
 {
   "name": "sanity-plugin-vercel-deploy",
-  "version": "3.3.4",
+  "version": "4.0.0-beta.0",
+  "type": "module",
   "description": "Trigger Vercel Deploy Hooks from your Sanity Studio",
   "keywords": [
     "sanity",
@@ -21,18 +22,16 @@
   "author": "Nick DiMatteo <hello@nickdimatteo.com>",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "source": "./src/index.ts",
-      "require": "./dist/index.js",
       "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.esm.js"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
+  "types": "./dist/index.esm.d.ts",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.esm.js",
-  "source": "./src/index.ts",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "sanity.json",
@@ -40,52 +39,54 @@
     "v2-incompatible.js"
   ],
   "scripts": {
-    "build": "run-s clean && plugin-kit verify-package --silent && pkg-utils build --strict && pkg-utils --strict",
-    "clean": "rimraf dist",
+    "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
     "format": "prettier --write --cache --ignore-unknown .",
     "link-watch": "plugin-kit link-watch",
     "lint": "eslint '**/*.+(ts|js|tsx|jsx)'",
-    "prepublishOnly": "run-s build",
+    "prepublishOnly": "npm run build",
     "watch": "pkg-utils watch --strict"
   },
   "dependencies": {
-    "@sanity/icons": "^1.0.8",
+    "@sanity/icons": "^3.7.0",
     "@sanity/incompatible-plugin": "^1.0.4",
-    "@sanity/ui": "^1.0.14",
-    "axios": "^0.24.0",
-    "nanoid": "^3.1.20",
+    "@sanity/ui": "^2.15.13",
+    "@sanity/uuid": "^3.0.2",
+    "axios": "^1.8.4",
     "prop-types": "^15.7.2",
-    "spacetime": "^6.16.0",
-    "swr": "^1.1.1"
+    "spacetime": "^7.9.0",
+    "swr": "^2.3.3"
   },
   "devDependencies": {
-    "@sanity/pkg-utils": "^2.2.3",
-    "@sanity/plugin-kit": "^3.1.4",
-    "@types/react": "^18.0.27",
-    "@typescript-eslint/eslint-plugin": "^5.49.0",
-    "@typescript-eslint/parser": "^5.49.0",
-    "eslint": "^8.32.0",
-    "eslint-config-prettier": "^8.6.0",
-    "eslint-config-sanity": "^6.0.0",
-    "eslint-plugin-prettier": "^4.2.1",
+    "@sanity/eslint-config-studio": "^5.0.2",
+    "@sanity/pkg-utils": "^7.2.2",
+    "@sanity/plugin-kit": "^4.0.19",
+    "@types/react": "^19.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.1",
+    "@typescript-eslint/parser": "^8.29.1",
+    "eslint": "^9.24.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-prettier": "^5.2.6",
     "eslint-plugin-react": "^7.32.1",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.8.3",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "prettier": "^3.5.3",
     "prettier-plugin-packagejson": "^2.4.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-is": "^18.2.0",
-    "rimraf": "^4.1.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-is": "^19.1.0",
     "sanity": "^3.2.5",
-    "styled-components": "^5.3.6",
-    "typescript": "^4.9.4"
+    "styled-components": "^6.1.17",
+    "typescript": "^5.8.3"
+  },
+  "sanityPlugin": {
+    "verifyPackage": {
+      "eslintImports": false
+    }
   },
   "peerDependencies": {
-    "react": "^18",
+    "react": "^19.1.0",
     "sanity": "^3"
   },
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   }
 }

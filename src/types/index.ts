@@ -11,22 +11,18 @@ export type StatusType =
 
 export interface VercelTeam {
   [key: string]: unknown
-  slug: string
-  name: string
-  id: string
+  name?: string
+  id?: string
+  slug?: string
 }
 
-export interface SanityDeploySchema {
-  _id: string
-  name: string
-  url: string
-  vercelProject: string
-  vercelTeam: VercelTeam
-  vercelToken: string
-  disableDeleteAction: boolean
+export interface VercelProject {
+  [key: string]: unknown
+  name?: string
+  id?: string
 }
 
-export interface Deployments {
+export interface VercelDeployment {
   [key: string]: unknown
   uid: string
   created: string
@@ -43,8 +39,35 @@ export interface Deployments {
   }
 }
 
+export interface SanityVercelConfig {
+  _id: 'secrets.vercelDeploy'
+  _type: 'vercelDeploy.config'
+  accessToken: string
+}
+
+export interface SanityVercelDeployment {
+  _id: string
+  _type: string
+  name: string
+  url: string
+  project: VercelProject
+  team: VercelTeam
+  accessToken: string
+  disableDeleteAction: boolean
+}
+
+export interface PendingProject {
+  name: string
+  projectId?: string
+  teamId?: string
+  url: string
+  accessToken: string
+  disableDeleteAction?: boolean
+}
+
 export interface VercelDeployConfig {
+  icon?: React.ComponentType
   name?: string
-  icon?: React.ReactNode
   title?: string
+  projects?: Array<Omit<PendingProject, 'accessToken'>>
 }

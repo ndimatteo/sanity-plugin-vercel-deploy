@@ -10,7 +10,9 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "./dist",
-    "jsx": "react-jsx",
+    "jsx": "preserve",
+    "module": "preserve",
+    "noEmit": true,
     "emitDeclarationOnly": true
   }
 }

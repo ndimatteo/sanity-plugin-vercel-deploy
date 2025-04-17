@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.settings",
   "include": ["./src", "./package.config.ts"],
+  "exclude": ["eslint.config.mjs"],
   "compilerOptions": {
     "rootDir": ".",
     "jsx": "react-jsx",

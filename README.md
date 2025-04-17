@@ -1,12 +1,14 @@
 <h3 align="center">
-  Vercel Deployment for Sanity
+  <img src="https://assets.vercel.com/image/upload/v1588805858/repositories/vercel/logo.png" height="40">
+  <br />
+  Vercel Deployments for Sanity
 </h3>
 <p align="center">
-  <strong>Trigger Vercel Deploy Hooks from your Sanity V3 Studio.</strong><br />
-✨ LIVE status updates ✨ multiple deployments ✨ active polling ✨ Vercel Teams support ✨
+  <strong>Deploy. Monitor. Repeat — without leaving the Studio.</strong><br />
+✨ One-click deploys ✨ LIVE status updates ✨ Automatic configuration ✨
 </p>
 
-![vercel-deploy-v3](https://user-images.githubusercontent.com/737188/214927717-ba84450f-8359-401c-acf0-08eeafc22881.png)
+![sanity-plugin-vercel-deploy-v4](https://cdn.sanity.io/images/5ngo93jw/production/51e176d24e118b356a6f628658f9b23cdb5fe382-3318x2072.png)
 
 <br />
 
@@ -33,7 +35,17 @@ export default defineConfig({
   // ...
   plugins: [
     // ...
-    vercelDeployTool(),
+    vercelDeployTool({
+      // Optional preconfigured projects
+      projects: [
+        {
+          name: 'Production',
+          projectId: '<project_id>',
+          teamId: '<team_id>',
+          url: '<deploy_hook_url>',
+        },
+      ],
+    }),
   ],
 })
 ```
@@ -44,32 +56,46 @@ export default defineConfig({
 
 Once installed, you should see a new "Deploy" tool in your Sanity Studio navbar.
 
-To create a new deployment, click the **"Add Project"** button. Next, you'll be prompted to add the following:
+To create a new project deployment, click the **"Add Project"** button. You'll be prompted to add the following:
 
-#### `Title`
+#### `Display Name`
 
-A name for your deployment to help you organize your deployments. <br />
-_Typically, this should be the environment you are deploying to, like `Production` or `Staging`_
+A name for your deployment to help you organize your deployments in Sanity. <br />
+_This can be the environment you are deploying to, like `Production` or `Staging`_
 
-#### `Vercel Project Name`
+#### `Project ID`
 
-This is the slugified project name listed in your Vercel account. <br />
-_You can find this in your Vercel Project under Settings → General → "Project Name"_
+This is the project ID listed in the Vercel Project settings. <br />
+_You can find this in your Vercel Project under Settings → General → "Project ID"_
 
-#### `Vercel Team Name` _(optional)_
+#### `Team ID` _(optional)_
 
-If your project is part of a Vercel Team you must provide this value. <br />
-_You can find this in your Vercel Team, under Settings → General → "Team Name"_
+If your project is part of a Vercel Team you must provide the Team’s ID. <br />
+_You can find this in your Vercel Team, under Settings → General → "Team ID"_
 
 #### `Deploy Hook URL`
 
 This is the Vercel Deploy hook you want to trigger builds with. <br />
 _You can find this in your Vercel Project under Settings → Git → "Deploy Hooks"_
 
-#### `Vercel Token`
+#### `Access Token`
 
-This is a token from your Vercel Account (not project). <br />
-_You can find this from your Vercel Account dropdown under Settings → "Tokens"_
+This is a valid, scoped token from your Vercel Personal Account (not team or project). <br />
+_You can find this in your Vercel Account dropdown under Account Settings → "Tokens"_
+
+#### `Prevent deletion in production?` _(optional)_
+
+This option disables the "Delete" action in the UI for `production` [environments of the Studio](https://www.sanity.io/docs/environment-variables#7f90f065848c).
+
+<br />
+
+## ⚡️ Preconfigured Projects
+
+Projects can be preconfigured by defining a projects array in the tool’s options ([see example code above](#%EF%B8%8F-configure)).
+
+> **Warning** <br />_Never_ include your Access Token in the Studio or plugin config – this [exposes your token in the client bundle](https://www.sanity.io/docs/environment-variables#c22c023216f9). Instead, you’ll be prompted to add it securely as a Studio Secret when the tool is first initialized. Once added, it can be updated anytime from the tool’s UI, next to the “Add Project” button.
+
+> **Note** <br />The "Edit" and "Delete" actions are disabled in `production` environments of the Studio for all preconfigured projects.
 
 <br />
 

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import spacetime from 'spacetime'
 import useSWR from 'swr'
 
@@ -7,6 +7,8 @@ import {
   ClockIcon,
   EditIcon,
   EllipsisVerticalIcon,
+  ErrorOutlineIcon,
+  BoltIcon,
   TrashIcon,
 } from '@sanity/icons'
 import {
@@ -19,62 +21,56 @@ import {
   Flex,
   Grid,
   Heading,
-  Inline,
   Menu,
   MenuButton,
+  MenuDivider,
   MenuItem,
+  Popover,
   Stack,
-  Switch,
   Text,
-  TextInput,
   Tooltip,
   useToast,
 } from '@sanity/ui'
 
-import { FormField } from 'sanity'
+import { useClient } from './hook/useClient'
+
+import { INITIAL_PENDING_PROJECT, IS_PRODUCTION } from './utils/constants'
+import { authFetcher, getProjectById, getTeamById } from './utils'
+
 import DeployHistory from './deploy-history'
 import DeployStatus from './deploy-status'
-import { useClient } from './hook/useClient'
-import type { SanityDeploySchema, StatusType } from './types'
 
-const fetcher = (url: string, token: string) =>
-  axios
-    .get(url, {
-      headers: {
-        'content-type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    .then((res) => res.data)
+import type {
+  SanityVercelDeployment,
+  StatusType,
+  PendingProject,
+} from './types'
+import DeployDialogForm from './deploy-form'
 
-const initialDeploy = {
-  title: '',
-  project: '',
-  team: '',
-  url: '',
-  token: '',
-  disableDeleteAction: false,
+type DeployItemProps = {
+  deployment: SanityVercelDeployment
+  isLocked?: boolean
 }
 
-interface DeployItemProps extends SanityDeploySchema {}
-const DeployItem: React.FC<DeployItemProps> = ({
-  name,
-  url,
-  _id,
-  vercelProject,
-  vercelToken,
-  vercelTeam,
-  disableDeleteAction,
-}) => {
+const DeployItem = ({ deployment, isLocked }: DeployItemProps) => {
   const client = useClient()
+  const { _id, name, project, team, url, accessToken, disableDeleteAction } =
+    deployment
 
+  // action states
   const [isLoading, setIsLoading] = useState(true)
-  const [isDeploying, setDeploying] = useState(false)
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [isDeploying, setDeploying] = useState(false)
 
-  const [pendingDeploy, setpendingDeploy] = useState(initialDeploy)
+  // dialog states
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false)
+
+  // form field states
+  const [pendingProject, setPendingProject] = useState<PendingProject>(
+    INITIAL_PENDING_PROJECT
+  )
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [status, setStatus] = useState<StatusType>('LOADING')
@@ -85,17 +81,18 @@ const DeployItem: React.FC<DeployItemProps> = ({
 
   const deployHookId = url?.split('/').pop()?.split('?').shift()
 
-  const { data: projectData } = useSWR(
+  const { data: projectData, isLoading: projectIsLoading } = useSWR(
     [
-      `https://api.vercel.com/v8/projects/${vercelProject}${
-        vercelTeam?.id ? `?teamId=${vercelTeam?.id}` : ''
+      `https://api.vercel.com/v9/projects/${project?.id}${
+        team?.id ? `?teamId=${team?.id}` : ''
       }`,
-      vercelToken,
+      accessToken,
     ],
-    (path, token) => fetcher(path, token),
+    ([url, token]) => authFetcher(url, token),
     {
       errorRetryCount: 3,
       onError: (err) => {
+        console.log(err)
         setStatus('ERROR')
         setErrorMessage(err.response?.data?.error?.message)
         setIsLoading(false)
@@ -104,24 +101,29 @@ const DeployItem: React.FC<DeployItemProps> = ({
   )
 
   const { data: deploymentData } = useSWR(
-    () => [
-      `https://api.vercel.com/v5/now/deployments?projectId=${
-        projectData.id
+    [
+      `https://api.vercel.com/v6/deployments?projectId=${
+        project?.id
       }&meta-deployHookId=${deployHookId}&limit=1${
-        vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
+        team?.id ? `&teamId=${team?.id}` : ''
       }`,
-      vercelToken,
+      accessToken,
     ],
-    (path, token) => fetcher(path, token),
+    ([url, token]) => authFetcher(url, token),
     {
       errorRetryCount: 3,
       refreshInterval: isDeploying ? 5000 : 0,
       onError: (err) => {
+        console.log(err)
         setStatus('ERROR')
         setErrorMessage(err.response?.data?.error?.message)
         setIsLoading(false)
       },
     }
+  )
+
+  const foundDeployHook = projectData?.link?.deployHooks?.find(
+    (hook: any) => hook.id === deployHookId
   )
 
   const onDeploy = (_name: string, _url: string) => {
@@ -154,11 +156,10 @@ const DeployItem: React.FC<DeployItemProps> = ({
     axios
       .patch(`https://api.vercel.com/v12/deployments/${id}/cancel`, null, {
         headers: {
-          'content-type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         params: {
-          ...(vercelTeam ? { teamId: vercelTeam?.id } : {}),
+          ...(team ? { teamId: team?.id } : {}),
         },
       })
       .then((res) => res.data)
@@ -168,10 +169,14 @@ const DeployItem: React.FC<DeployItemProps> = ({
         setIsLoading(false)
         setBuildTime(null)
         setTimestamp(res.canceledAt)
+        toast.push({
+          status: 'success',
+          title: `Successfully canceled deployment`,
+        })
       })
   }
 
-  const onRemove = (_name: string, id: string) => {
+  const onDelete = (_name: string, id: string) => {
     setIsLoading(true)
     client.delete(id).then(() => {
       toast.push({
@@ -182,41 +187,35 @@ const DeployItem: React.FC<DeployItemProps> = ({
   }
 
   const onEdit = () => {
-    setpendingDeploy({
-      title: name,
-      project: vercelProject,
-      team: vercelTeam?.slug,
+    setPendingProject({
+      name,
+      projectId: project?.id || '',
+      teamId: team?.id || '',
       url,
-      token: vercelToken,
+      accessToken: accessToken,
       disableDeleteAction,
     })
-    setIsFormOpen(true)
+    setIsEditOpen(true)
   }
 
-  const onSubmitEdit = async () => {
-    // If we have a team slug, we'll have to get the associated teamId to include in every new request
-    // Docs: https://vercel.com/docs/api#api-basics/authentication/accessing-resources-owned-by-a-team
-    let vercelTeamID
+  const onSubmitEdit = useCallback(async () => {
     let vercelTeamName
+    let vercelProjectName
+
     setIsSubmitting(true)
 
-    if (pendingDeploy.team) {
+    if (pendingProject.teamId) {
       try {
-        const fetchTeam = await axios.get(
-          `https://api.vercel.com/v2/teams?slug=${pendingDeploy.team}`,
-          {
-            headers: {
-              Authorization: `Bearer ${pendingDeploy.token}`,
-            },
-          }
+        const team = await getTeamById(
+          pendingProject.teamId,
+          pendingProject.accessToken
         )
 
-        if (!fetchTeam?.data?.id) {
-          throw new Error('No team id found')
+        if (!team?.data?.id) {
+          throw new Error('Vercel Team not found')
         }
 
-        vercelTeamID = fetchTeam.data.id
-        vercelTeamName = fetchTeam.data.name
+        vercelTeamName = team.data.name
       } catch (error) {
         console.error(error)
         setIsSubmitting(false)
@@ -226,39 +225,68 @@ const DeployItem: React.FC<DeployItemProps> = ({
           title: 'No Team found!',
           closable: true,
           description:
-            'Make sure the token you provided is valid and that the team’s slug correspond to the one you see in Vercel',
+            'Make sure the Access Token you provided is valid and the Team ID matches the one you see in Vercel',
         })
 
         return
       }
     }
 
+    try {
+      const project = await getProjectById(
+        pendingProject.projectId,
+        pendingProject.accessToken,
+        pendingProject.teamId
+      )
+
+      if (!project?.data?.id) {
+        throw new Error('Vercel Project not found')
+      }
+
+      vercelProjectName = project.data.name
+    } catch (error) {
+      console.error(error)
+      setIsSubmitting(false)
+
+      toast.push({
+        status: 'error',
+        title: 'No Project found!',
+        closable: true,
+        description:
+          'Make sure the Access Token you provided is valid and the Project ID matches to the one you see in Vercel',
+      })
+
+      return
+    }
+
     client
       .patch(_id)
       .set({
-        name: pendingDeploy.title,
-        url: pendingDeploy.url,
-        vercelProject: pendingDeploy.project,
-        vercelTeam: {
-          slug: pendingDeploy.team || undefined,
-          name: vercelTeamName || undefined,
-          id: vercelTeamID || undefined,
+        name: pendingProject.name,
+        url: pendingProject.url,
+        project: {
+          id: pendingProject.projectId,
+          name: vercelProjectName || undefined,
         },
-        vercelToken: pendingDeploy.token,
-        disableDeleteAction: pendingDeploy.disableDeleteAction,
+        team: {
+          id: pendingProject.teamId || undefined,
+          name: vercelTeamName || undefined,
+        },
+        accessToken: pendingProject.accessToken,
+        disableDeleteAction: pendingProject.disableDeleteAction,
       })
       .commit()
       .then(() => {
         toast.push({
           status: 'success',
           title: 'Success!',
-          description: `Updated Deployment: ${pendingDeploy.title}`,
+          description: `Updated Deployment: ${pendingProject.name}`,
         })
 
-        setIsFormOpen(false)
+        setIsEditOpen(false)
         setIsSubmitting(false)
       })
-  }
+  }, [pendingProject, client])
 
   // set status when new deployment data comes in
   useEffect(() => {
@@ -298,7 +326,7 @@ const DeployItem: React.FC<DeployItemProps> = ({
     }
   }, [status])
 
-  // count build time
+  // build time ticker
   const tick = (_timestamp: string | null) => {
     if (_timestamp) {
       setBuildTime(spacetime.now().since(spacetime(_timestamp)).rounded)
@@ -324,308 +352,322 @@ const DeployItem: React.FC<DeployItemProps> = ({
   }, [timestamp, isDeploying])
 
   return (
-    <>
-      <Flex
-        wrap="wrap"
-        direction={['column', 'column', 'row']}
-        align={['flex-end', 'flex-end', 'center']}
-      >
-        <Box flex={[4, 1]} paddingBottom={[4, 4, 1]}>
-          <Stack space={3}>
-            <Inline space={2}>
+    <Stack space={5}>
+      <Flex wrap="nowrap" align="flex-start">
+        <Stack space={2} flex={1}>
+          <Flex wrap="wrap" align="center" gap={1}>
+            <Box marginRight={1}>
               <Heading as="h2" size={1}>
-                <Text weight="semibold">{name}</Text>
+                <Text weight="medium">{name}</Text>
               </Heading>
-              <Badge
-                tone="primary"
-                paddingX={3}
-                paddingY={2}
-                radius={6}
-                fontSize={0}
+            </Box>
+
+            {team?.id && (
+              <Tooltip
+                content={
+                  <Text muted size={1}>
+                    Vercel Team
+                  </Text>
+                }
+                animate
+                placement="top"
+                portal
               >
-                {vercelProject}
-              </Badge>
-              {vercelTeam?.id && (
                 <Badge
-                  mode="outline"
+                  tone="primary"
                   paddingX={3}
                   paddingY={2}
-                  radius={6}
+                  radius="full"
                   fontSize={0}
                 >
-                  {vercelTeam?.name}
+                  {team?.name}
                 </Badge>
-              )}
-            </Inline>
-            <Code size={1}>
-              <Box
-                style={{
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {url}
-              </Box>
-            </Code>
-          </Stack>
-        </Box>
-        <Flex
-          wrap="nowrap"
-          align="center"
-          marginLeft={[0, 0, 4]}
-          flex={[1, 'none']}
-        >
-          <Inline space={2}>
-            {vercelToken && vercelProject && (
-              <Box marginRight={2}>
-                <Stack space={2}>
-                  <DeployStatus status={status} justify="flex-end">
-                    {errorMessage && (
-                      <Box marginLeft={2}>
-                        <Tooltip
-                          content={
-                            <Box padding={2}>
-                              <Text muted size={1}>
-                                {errorMessage}
-                              </Text>
-                            </Box>
-                          }
-                          placement="top"
-                        >
-                          <Badge mode="outline" tone="critical">
-                            ?
-                          </Badge>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </DeployStatus>
+              </Tooltip>
+            )}
 
-                  <Text align="right" size={1} muted>
-                    {/* eslint-disable-next-line no-nested-ternary */}
-                    {isDeploying
-                      ? buildTime || '--'
-                      : timestamp
-                      ? spacetime.now().since(spacetime(timestamp)).rounded
-                      : '--'}
+            {project?.name && (
+              <Tooltip
+                content={
+                  <Text muted size={1}>
+                    Vercel Project
                   </Text>
-                </Stack>
-              </Box>
+                }
+                animate
+                placement="top"
+                portal
+              >
+                <Badge
+                  tone="primary"
+                  paddingX={3}
+                  paddingY={2}
+                  radius="full"
+                  fontSize={0}
+                >
+                  {projectData?.name || project?.name}
+                </Badge>
+              </Tooltip>
             )}
-
+          </Flex>
+          <Tooltip
+            content={
+              <>
+                {foundDeployHook && (
+                  <Text muted size={1}>
+                    <strong style={{ fontWeight: 600 }}>
+                      {foundDeployHook.name}
+                    </strong>{' '}
+                    on{' '}
+                    <strong style={{ fontWeight: 600 }}>
+                      {foundDeployHook.ref}
+                    </strong>{' '}
+                    branch
+                  </Text>
+                )}
+              </>
+            }
+            animate
+            placement="top"
+            portal
+          >
+            <Box paddingY={2}>
+              <Code size={0} style={{ cursor: 'default' }}>
+                <Box
+                  style={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {url}
+                </Box>
+              </Code>
+            </Box>
+          </Tooltip>
+          <Flex>
             <Button
-              type="button"
-              tone="positive"
-              disabled={isDeploying || isLoading}
-              loading={isDeploying || isLoading}
-              onClick={() => onDeploy(name, url)}
-              paddingX={[5]}
-              paddingY={[4]}
-              radius={3}
-              text="Deploy"
-            />
-
-            {isDeploying && (status === 'BUILDING' || status === 'QUEUED') && (
-              <Button
-                type="button"
-                tone="critical"
-                onClick={() => {
-                  onCancel(deploymentData.deployments[0].uid, vercelToken)
-                }}
-                radius={3}
-                text="Cancel"
-              />
-            )}
-
-            <MenuButton
-              id={_id}
-              button={
-                <Button
-                  mode="bleed"
-                  icon={EllipsisVerticalIcon}
-                  disabled={isDeploying || isLoading}
-                />
+              as={!projectIsLoading && projectData?.link ? 'a' : undefined}
+              href={
+                !projectIsLoading && projectData?.link
+                  ? `https://github.com/${projectData?.link?.org}/${projectData?.link?.repo}`
+                  : undefined
               }
-              popover={{ portal: true, placement: 'bottom-end' }}
-              menu={
-                <Menu>
-                  <MenuItem
-                    text="History"
-                    icon={ClockIcon}
-                    onClick={() => setIsHistoryOpen(true)}
-                    disabled={!deploymentData?.deployments.length}
-                  />
+              target="_blank"
+              text={
+                !projectIsLoading && projectData?.link
+                  ? projectData?.link?.org + '/' + projectData?.link?.repo
+                  : 'loading...'
+              }
+              icon={
+                <svg
+                  data-sanity-icon
+                  aria-label="github"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 14 14"
+                  height="1em"
+                  width="1em"
+                >
+                  <path
+                    d="M7 .175c-3.872 0-7 3.128-7 7 0 3.084 2.013 5.71 4.79 6.65.35.066.482-.153.482-.328v-1.181c-1.947.415-2.363-.941-2.363-.941-.328-.81-.787-1.028-.787-1.028-.634-.438.044-.416.044-.416.7.044 1.071.722 1.071.722.635 1.072 1.641.766 2.035.59.066-.459.24-.765.437-.94-1.553-.175-3.193-.787-3.193-3.456 0-.766.262-1.378.721-1.881-.065-.175-.306-.897.066-1.86 0 0 .59-.197 1.925.722a6.754 6.754 0 0 1 1.75-.24c.59 0 1.203.087 1.75.24 1.335-.897 1.925-.722 1.925-.722.372.963.131 1.685.066 1.86.46.48.722 1.115.722 1.88 0 2.691-1.641 3.282-3.194 3.457.24.219.481.634.481 1.29v1.926c0 .197.131.415.481.328C11.988 12.884 14 10.259 14 7.175c0-3.872-3.128-7-7-7z"
+                    fill="currentColor"
+                    fillRule="nonzero"
+                  ></path>
+                </svg>
+              }
+              mode="ghost"
+              fontSize={0}
+              space={3}
+              paddingX={2}
+              paddingY={2}
+              disabled={projectIsLoading}
+              radius="full"
+              muted
+              tone="neutral"
+            />
+          </Flex>
+        </Stack>
+
+        <Flex gap={2} align="center">
+          {isLocked && (
+            <Tooltip
+              content={
+                <Text muted size={1}>
+                  Automatically added
+                </Text>
+              }
+              animate
+              placement="left"
+              portal
+            >
+              <Button
+                as="div"
+                mode="ghost"
+                tone="suggest"
+                radius="full"
+                icon={BoltIcon}
+                style={{
+                  cursor: 'default !important',
+                }}
+              />
+            </Tooltip>
+          )}
+
+          <MenuButton
+            id={`${_id}-actions`}
+            popover={{
+              portal: true,
+              placement: 'bottom-end',
+              tone: 'default',
+              animate: true,
+            }}
+            button={
+              <Button
+                mode="ghost"
+                icon={EllipsisVerticalIcon}
+                disabled={isDeploying || isLoading}
+                radius="full"
+              />
+            }
+            menu={
+              <Menu>
+                <MenuItem
+                  text="History"
+                  icon={ClockIcon}
+                  onClick={() => setIsHistoryOpen(true)}
+                  disabled={!deploymentData?.deployments.length}
+                  fontSize={1}
+                />
+
+                {/* Hide the edit action if locked in production */}
+                {IS_PRODUCTION && isLocked ? null : (
                   <MenuItem
                     text="Edit"
                     icon={EditIcon}
                     tone="primary"
                     onClick={() => onEdit()}
+                    fontSize={1}
                   />
+                )}
 
-                  {!disableDeleteAction && (
+                {/* Hide the delete action if disabled or locked in production */}
+                {IS_PRODUCTION && (disableDeleteAction || isLocked) ? null : (
+                  <>
+                    <MenuDivider />
                     <MenuItem
                       text="Delete"
                       icon={TrashIcon}
                       tone="critical"
-                      onClick={() => onRemove(name, _id)}
+                      onClick={() => setIsConfirmDeleteOpen(true)}
+                      fontSize={1}
                     />
-                  )}
-                </Menu>
-              }
-            />
-          </Inline>
+                  </>
+                )}
+              </Menu>
+            }
+          />
         </Flex>
       </Flex>
 
-      {isFormOpen && (
-        <Dialog
-          header="Edit Project Deployment"
-          id="update-webhook"
-          width={1}
-          onClickOutside={() => setIsFormOpen(false)}
-          onClose={() => setIsFormOpen(false)}
-          footer={
-            <Box padding={3}>
-              <Grid columns={2} gap={3}>
-                <Button
-                  padding={4}
-                  mode="ghost"
-                  text="Cancel"
-                  onClick={() => setIsFormOpen(false)}
-                />
-                <Button
-                  padding={4}
-                  text="Update"
-                  tone="primary"
-                  loading={isSubmitting}
-                  onClick={() => onSubmitEdit()}
-                  disabled={
-                    isSubmitting ||
-                    !pendingDeploy.project ||
-                    !pendingDeploy.url ||
-                    !pendingDeploy.token
-                  }
-                />
-              </Grid>
+      <Flex wrap="nowrap" align="flex-end" justify="space-between">
+        {accessToken && project?.id && (
+          <Tooltip
+            content={
+              <Text muted size={1}>
+                {spacetime(timestamp).format('nice-full')}
+              </Text>
+            }
+            animate
+            placement="right"
+            fallbackPlacements={['top-start']}
+            portal
+          >
+            <Box paddingRight={2}>
+              <Flex align="center" gap={2}>
+                <DeployStatus status={status} justify="flex-end">
+                  {errorMessage && (
+                    <Flex marginLeft={2}>
+                      <Tooltip
+                        content={
+                          <Text muted size={1}>
+                            {errorMessage ?? 'An error has occured'}
+                          </Text>
+                        }
+                        placement="top"
+                      >
+                        <Card display="flex" tone="critical" radius="full">
+                          <ErrorOutlineIcon width="1.5em" height="1.5em" />
+                        </Card>
+                      </Tooltip>
+                    </Flex>
+                  )}
+                </DeployStatus>
+
+                {isDeploying && buildTime && (
+                  <Text align="right" size={0} weight="medium" muted>
+                    {buildTime}
+                  </Text>
+                )}
+
+                {!isDeploying && timestamp && (
+                  <Text align="right" size={0} weight="medium" muted>
+                    {spacetime.now().since(spacetime(timestamp)).rounded}
+                  </Text>
+                )}
+              </Flex>
             </Box>
-          }
-        >
-          <Box padding={4}>
-            <Stack space={4}>
-              <FormField
-                title="Display Title (internal use only)"
-                description={
-                  <>
-                    This should be the environment you are deploying to, like{' '}
-                    <em>Production</em> or <em>Staging</em>
-                  </>
-                }
-              >
-                <TextInput
-                  type="text"
-                  value={pendingDeploy.title}
-                  onChange={(e) => {
-                    e.persist()
-                    const title = (e.target as HTMLInputElement).value
-                    setpendingDeploy((prevState) => ({
-                      ...prevState,
-                      ...{ title },
-                    }))
-                  }}
-                />
-              </FormField>
+          </Tooltip>
+        )}
 
-              <FormField
-                title="Vercel Project Name"
-                description={`Vercel Project: Settings → General → "Project Name"`}
-              >
-                <TextInput
-                  type="text"
-                  value={pendingDeploy.project}
-                  onChange={(e) => {
-                    e.persist()
-                    const project = (e.target as HTMLInputElement).value
-                    setpendingDeploy((prevState) => ({
-                      ...prevState,
-                      ...{ project },
-                    }))
-                  }}
-                />
-              </FormField>
+        <Flex gap={2}>
+          {isDeploying && (status === 'BUILDING' || status === 'QUEUED') && (
+            <Button
+              type="button"
+              tone="critical"
+              mode="ghost"
+              onClick={() => {
+                onCancel(deploymentData.deployments[0].uid, accessToken)
+              }}
+              paddingX={4}
+              paddingY={3}
+              radius={3}
+              text="Cancel"
+            />
+          )}
 
-              <FormField
-                title="Vercel Team Name"
-                description={`Required for projects under a Vercel Team: Settings → General → "Team Name"`}
-              >
-                <TextInput
-                  type="text"
-                  value={pendingDeploy.team}
-                  onChange={(e) => {
-                    e.persist()
-                    const team = (e.target as HTMLInputElement).value
-                    setpendingDeploy((prevState) => ({
-                      ...prevState,
-                      ...{ team },
-                    }))
-                  }}
-                />
-              </FormField>
+          <Button
+            type="button"
+            tone="positive"
+            disabled={isDeploying || isLoading}
+            loading={isDeploying || isLoading}
+            onClick={() => onDeploy(name, url)}
+            paddingX={[4]}
+            paddingY={[3]}
+            radius={3}
+            text="Deploy"
+          />
+        </Flex>
+      </Flex>
 
-              <FormField
-                title="Deploy Hook URL"
-                description={`Vercel Project: Settings → Git → "Deploy Hooks"`}
-              >
-                <TextInput
-                  type="text"
-                  inputMode="url"
-                  value={pendingDeploy.url}
-                  onChange={(e) => {
-                    e.persist()
-                    const pendingDeployUrl = (e.target as HTMLInputElement)
-                      .value
-                    setpendingDeploy((prevState) => ({
-                      ...prevState,
-                      ...{ url: pendingDeployUrl },
-                    }))
-                  }}
-                />
-              </FormField>
-
-              <FormField>
-                <Card paddingY={3}>
-                  <Flex align="center">
-                    <Switch
-                      id="disableDeleteAction"
-                      style={{ display: 'block' }}
-                      onChange={(e) => {
-                        e.persist()
-                        const isChecked = (e.target as HTMLInputElement).checked
-
-                        setpendingDeploy((prevState) => ({
-                          ...prevState,
-                          ...{ disableDeleteAction: isChecked },
-                        }))
-                      }}
-                      checked={pendingDeploy.disableDeleteAction}
-                    />
-                    <Box flex={1} paddingLeft={3}>
-                      <Text>
-                        <label htmlFor="disableDeleteAction">
-                          Disable the "Delete" action for this item in
-                          production?
-                        </label>
-                      </Text>
-                    </Box>
-                  </Flex>
-                </Card>
-              </FormField>
-            </Stack>
-          </Box>
-        </Dialog>
+      {/* Deployment Editor Dialog */}
+      {isEditOpen && (
+        <DeployDialogForm
+          header="Edit Project Deployment"
+          id="edit-project"
+          values={pendingProject}
+          setValues={setPendingProject}
+          onClose={() => setIsEditOpen(false)}
+          onSubmit={onSubmitEdit}
+          onSubmitText="Update"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+          hideAccessToken
+          hideDisableDeleteAction={IS_PRODUCTION && disableDeleteAction}
+        />
       )}
 
+      {/* Deployment History Dialog */}
       {isHistoryOpen && (
         <Dialog
+          animate
           id="deploy-history"
           header={`Deployment History: ${name}`}
           onClickOutside={() => setIsHistoryOpen(false)}
@@ -633,14 +675,58 @@ const DeployItem: React.FC<DeployItemProps> = ({
           width={2}
         >
           <DeployHistory
+            project={projectData}
+            team={team}
             url={url}
-            vercelProject={projectData.id}
-            vercelToken={vercelToken}
-            vercelTeam={vercelTeam}
+            accessToken={accessToken}
           />
         </Dialog>
       )}
-    </>
+
+      {/* Deployment Confirm Delete Dialog */}
+      {isConfirmDeleteOpen && (
+        <Dialog
+          animate
+          id="deploy-confirm-delete"
+          header="Delete Project Deployment"
+          onClickOutside={() => setIsConfirmDeleteOpen(false)}
+          onClose={() => setIsConfirmDeleteOpen(false)}
+          width={1}
+          footer={
+            <Box padding={3}>
+              <Grid columns={2} gap={3}>
+                <Button
+                  padding={3}
+                  mode="ghost"
+                  text="Cancel"
+                  onClick={() => setIsConfirmDeleteOpen(false)}
+                />
+                <Button
+                  padding={3}
+                  text="Confirm Delete"
+                  tone="critical"
+                  loading={isSubmitting}
+                  onClick={() => onDelete(name, _id)}
+                />
+              </Grid>
+            </Box>
+          }
+        >
+          <Stack space={4} padding={4}>
+            <Text weight="medium">
+              Are you sure you want to delete this Project Deployment:{' '}
+              <strong>{name}</strong>?
+            </Text>
+            <Card padding={4} radius={3} tone="critical">
+              <Text>
+                <strong>Warning:</strong> This action is not reversible. Please
+                be certain.
+              </Text>
+            </Card>
+          </Stack>
+        </Dialog>
+      )}
+    </Stack>
   )
 }
 

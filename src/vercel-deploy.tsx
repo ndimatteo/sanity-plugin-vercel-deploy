@@ -1,8 +1,4 @@
-import axios from 'axios'
-import { nanoid } from 'nanoid'
-import { useEffect, useState } from 'react'
-import { type Subscription } from 'rxjs'
-
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
   Box,
   Button,
@@ -13,198 +9,258 @@ import {
   Grid,
   Spinner,
   Stack,
-  studioTheme,
-  Switch,
   Text,
   TextInput,
   ThemeProvider,
   ToastProvider,
   useToast,
 } from '@sanity/ui'
-import { FormField, useColorScheme } from 'sanity'
+import { buildTheme } from '@sanity/ui/theme'
+import { BoltIcon, CogIcon } from '@sanity/icons'
+import { FormField, useColorSchemeValue } from 'sanity'
+
+import { useClient } from './hook/useClient'
+import { useClientSubscription } from './hook/useClientSubscription'
+
+import {
+  VERCEL_DEPLOY_QUERY,
+  VERCEL_DEPLOY_SECRETS_QUERY,
+  INITIAL_PENDING_PROJECT,
+} from './utils/constants'
+import {
+  createProject,
+  getProjectById,
+  getTeamById,
+  saveVercelDeployAccessToken,
+} from './utils'
 
 import DeployItem from './deploy-item'
-import { useClient } from './hook/useClient'
-import type { SanityDeploySchema } from './types'
 
-const initialDeploy = {
-  title: '',
-  project: '',
-  team: '',
-  url: '',
-  token: '',
-  disableDeleteAction: false,
+import type { Tool } from 'sanity'
+import type {
+  SanityVercelDeployment,
+  SanityVercelConfig,
+  VercelDeployConfig,
+  PendingProject,
+} from './types'
+import DeployDialogForm from './deploy-form'
+
+type VercelDeployProps = {
+  tool: Tool<VercelDeployConfig>
 }
 
-const VercelDeploy = () => {
-  const WEBHOOK_TYPE = 'webhook_deploy'
-  const WEBHOOK_QUERY = `*[_type == "${WEBHOOK_TYPE}"] | order(_createdAt)`
-  const client = useClient()
-  const { scheme } = useColorScheme()
+let hasInitializedPredefinedProjects = false
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [deploys, setDeploys] = useState<SanityDeploySchema[]>([])
-  const [pendingDeploy, setpendingDeploy] = useState(initialDeploy)
+const VercelDeploy = ({ tool }: VercelDeployProps) => {
+  const client = useClient()
+  const scheme = useColorSchemeValue()
+  const theme = useMemo(() => buildTheme(), [])
   const toast = useToast()
 
-  const onSubmit = async () => {
-    // If we have a team slug, we'll have to get the associated teamId to include in every new request
-    // Docs: https://vercel.com/docs/api#api-basics/authentication/accessing-resources-owned-by-a-team
-    let vercelTeamID
-    let vercelTeamName
-    setIsSubmitting(true)
+  const { data: deployments, isLoading } =
+    useClientSubscription<SanityVercelDeployment>(VERCEL_DEPLOY_QUERY)
 
-    if (pendingDeploy.team) {
-      try {
-        const fetchTeam = await axios.get(
-          `https://api.vercel.com/v2/teams?slug=${pendingDeploy.team}`,
-          {
-            headers: {
-              Authorization: `Bearer ${pendingDeploy.token}`,
-            },
+  // action states
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // dialog states
+  const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
+
+  // form field states
+  const [pendingProject, setPendingProject] = useState<PendingProject>(
+    INITIAL_PENDING_PROJECT
+  )
+
+  // predefined project states
+  const predefinedProjects = tool?.options?.projects
+  const { data: secrets, isLoading: isLoadingSecrets } =
+    useClientSubscription<SanityVercelConfig>(VERCEL_DEPLOY_SECRETS_QUERY)
+  const accessToken = secrets?.[0]?.accessToken
+  const missingAccessToken =
+    predefinedProjects?.length && !isLoadingSecrets && !accessToken
+  const [pendingAccessToken, setPendingAccessToken] = useState('')
+  const [isConfigOpen, setIsConfigOpen] = useState(false)
+  const accessTokenFieldRef = useRef<HTMLInputElement>(null)
+
+  const onSubmit = useCallback(
+    async (pendingProject: PendingProject, automated?: boolean) => {
+      let vercelTeamName
+      let vercelProjectName
+
+      setIsSubmitting(true)
+
+      if (pendingProject.teamId) {
+        try {
+          const team = await getTeamById(
+            pendingProject.teamId,
+            pendingProject.accessToken
+          )
+
+          if (!team?.data?.id) {
+            throw new Error('Vercel Team not found')
           }
+
+          vercelTeamName = team.data.name
+        } catch (error) {
+          console.error(error)
+          setIsSubmitting(false)
+
+          toast.push({
+            status: 'error',
+            title: 'No Team found!',
+            closable: true,
+            description: automated
+              ? 'Make sure the Access Token you provided is valid'
+              : 'Make sure the Access Token you provided is valid and the Team ID matches the one you see in Vercel',
+          })
+
+          return
+        }
+      }
+
+      try {
+        const project = await getProjectById(
+          pendingProject.projectId,
+          pendingProject.accessToken,
+          pendingProject.teamId
         )
 
-        if (!fetchTeam?.data?.id) {
-          throw new Error('No team id found')
+        if (!project?.data?.id) {
+          throw new Error('Vercel Project not found')
         }
 
-        vercelTeamID = fetchTeam.data.id
-        vercelTeamName = fetchTeam.data.name
+        vercelProjectName = project.data.name
       } catch (error) {
         console.error(error)
         setIsSubmitting(false)
 
         toast.push({
           status: 'error',
-          title: 'No Team found!',
+          title: 'No Project found!',
           closable: true,
-          description:
-            'Make sure the token you provided is valid and that the team’s slug correspond to the one you see in Vercel',
+          description: automated
+            ? 'Make sure the Access Token you provided is valid'
+            : 'Make sure the Access Token you provided is valid and the Project ID matches to the one you see in Vercel',
         })
 
         return
       }
-    }
 
-    client
-      .create({
-        // Explicitly define an _id inside the vercel-deploy path to make sure it's not publicly accessible
-        // This will protect users' tokens & project info. Read more: https://www.sanity.io/docs/ids
-        _id: `vercel-deploy.${nanoid()}`,
-        _type: WEBHOOK_TYPE,
-        name: pendingDeploy.title,
-        url: pendingDeploy.url,
-        vercelProject: pendingDeploy.project,
-        vercelTeam: {
-          slug: pendingDeploy.team || undefined,
-          name: vercelTeamName || undefined,
-          id: vercelTeamID || undefined,
+      createProject(client, {
+        name: pendingProject.name,
+        url: pendingProject.url,
+        project: {
+          id: pendingProject.projectId || undefined,
+          name: vercelProjectName || undefined,
         },
-        vercelToken: pendingDeploy.token,
-        disableDeleteAction: pendingDeploy.disableDeleteAction,
-      })
-      .then(() => {
+        team: {
+          id: pendingProject.teamId || undefined,
+          name: vercelTeamName || undefined,
+        },
+        accessToken: pendingProject.accessToken,
+        disableDeleteAction: pendingProject.disableDeleteAction ? true : false,
+      }).then(() => {
         toast.push({
           status: 'success',
           title: 'Success!',
-          description: `Created Deployment: ${pendingDeploy.title}`,
+          description: `Created Deployment: ${pendingProject.name}`,
         })
-        setIsFormOpen(false)
+        setIsNewProjectOpen(false)
         setIsSubmitting(false)
-        setpendingDeploy(initialDeploy) // Reset the pending webhook state
+        setPendingProject(INITIAL_PENDING_PROJECT) // Reset the pending webhook state
       })
-  }
+    },
+    [client]
+  )
 
-  // Fetch all existing webhooks and listen for newly created
-  useEffect(() => {
-    let webhookSubscription: Subscription
+  // Setup predefined Projects
+  const initializePredefinedProjects = useCallback(
+    async (accessToken: string) => {
+      if (hasInitializedPredefinedProjects || !predefinedProjects?.length)
+        return
+      hasInitializedPredefinedProjects = true
 
-    client.fetch(WEBHOOK_QUERY).then((w) => {
-      setDeploys(w)
-      setIsLoading(false)
+      const existingUrls = deployments
+        ? new Set(deployments.map((p) => p.url))
+        : new Set()
+      const missingProjects = predefinedProjects.filter(
+        (project) => !existingUrls.has(project.url)
+      )
 
-      webhookSubscription = client
-        .listen<SanityDeploySchema>(WEBHOOK_QUERY, {}, { includeResult: true })
-        .subscribe({
-          next: (res) => {
-            if (res.type === 'mutation') {
-              const wasCreated = res.mutations.some((item) =>
-                Object.prototype.hasOwnProperty.call(item, 'create')
-              )
-
-              const wasPatched = res.mutations.some((item) =>
-                Object.prototype.hasOwnProperty.call(item, 'patch')
-              )
-
-              const wasDeleted = res.mutations.some((item) =>
-                Object.prototype.hasOwnProperty.call(item, 'delete')
-              )
-
-              const filterDeploy = (deploy: SanityDeploySchema) =>
-                deploy._id !== res.documentId
-
-              const updateDeploy = (deploy: SanityDeploySchema) =>
-                deploy._id === res.documentId
-                  ? (res.result as SanityDeploySchema)
-                  : deploy
-
-              if (wasCreated) {
-                setDeploys((prevState) => {
-                  if (res.result) {
-                    return [...prevState, res.result]
-                  }
-                  return prevState
-                })
-              }
-              if (wasPatched) {
-                setDeploys((prevState) => {
-                  const updatedDeploys = prevState.map(updateDeploy)
-
-                  return updatedDeploys
-                })
-              }
-              if (wasDeleted) {
-                setDeploys((prevState) => prevState.filter(filterDeploy))
-              }
-            }
-          },
+      if (missingProjects.length) {
+        toast.push({
+          status: 'info',
+          title: 'Adding predefined projects...',
         })
-    })
 
-    return () => {
-      if (webhookSubscription) {
-        webhookSubscription.unsubscribe()
+        missingProjects.forEach(async (pendingProject) => {
+          onSubmit({ ...pendingProject, accessToken }, true)
+        })
       }
+    },
+    [deployments, onSubmit]
+  )
+
+  const onAddToken = useCallback(
+    async (accessToken: string, initializeProjects?: boolean) => {
+      setIsSubmitting(true)
+
+      saveVercelDeployAccessToken(client, accessToken).then(() => {
+        hasInitializedPredefinedProjects = false
+        setIsSubmitting(false)
+        setIsConfigOpen(false)
+        setPendingAccessToken('')
+        toast.push({
+          status: 'success',
+          title: 'Successfully updated Vercel Access Token',
+        })
+
+        if (initializeProjects) {
+          initializePredefinedProjects(accessToken)
+        }
+      })
+    },
+    [client, initializePredefinedProjects]
+  )
+
+  // attempt to initialize predefined projects when accessToken is found
+  useEffect(() => {
+    if (accessToken && !isLoading && !isLoadingSecrets) {
+      initializePredefinedProjects(accessToken)
     }
-  }, [WEBHOOK_QUERY, client])
+  }, [accessToken, isLoading, isLoadingSecrets])
+
+  // change focus on config dialog
+  useEffect(() => {
+    if (isConfigOpen || missingAccessToken) {
+      requestAnimationFrame(() => {
+        accessTokenFieldRef.current?.focus()
+      })
+    }
+  }, [isConfigOpen, missingAccessToken])
 
   return (
-    <ThemeProvider theme={studioTheme}>
+    <ThemeProvider theme={theme}>
       <ToastProvider>
         <Container display="grid" width={6} style={{ minHeight: '100%' }}>
           <Flex direction="column">
-            <Card padding={4} borderBottom>
+            <Card padding={3} borderBottom>
               <Flex align="center">
                 <Flex flex={1} align="center">
-                  <Card>
-                    <svg
-                      fill="currentColor"
-                      viewBox="0 0 512 512"
-                      height="2rem"
-                      width="2rem"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M256 48l240 416H16z" />
-                    </svg>
-                  </Card>
-                  <Card marginX={1} style={{ opacity: 0.15 }}>
+                  <svg
+                    fill="currentColor"
+                    viewBox="0 0 76 65"
+                    height="1rem"
+                    width="1rem"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+                  </svg>
+                  <Card display="flex" marginX={1} style={{ opacity: 0.25 }}>
                     <svg
                       viewBox="0 0 24 24"
-                      width="32"
-                      height="32"
+                      height="1rem"
+                      width="1rem"
                       stroke="currentColor"
                       strokeWidth="1"
                       strokeLinecap="round"
@@ -216,29 +272,40 @@ const VercelDeploy = () => {
                     </svg>
                   </Card>
                   <Card>
-                    <Text as="h1" size={2} weight="semibold">
+                    <Text as="h1" size={1} weight="medium">
                       Vercel Deployments
                     </Text>
                   </Card>
                 </Flex>
-                <Box>
+
+                <Flex gap={2}>
                   <Button
                     type="button"
-                    fontSize={2}
+                    fontSize={1}
                     tone="primary"
-                    padding={3}
-                    radius={3}
+                    padding={2}
+                    radius={2}
                     text="Add Project"
-                    onClick={() => setIsFormOpen(true)}
+                    onClick={() => setIsNewProjectOpen(true)}
                   />
-                </Box>
+
+                  {predefinedProjects?.length && (
+                    <Button
+                      icon={CogIcon}
+                      onClick={() => setIsConfigOpen(true)}
+                      padding={2}
+                      radius={2}
+                      mode="ghost"
+                    />
+                  )}
+                </Flex>
               </Flex>
             </Card>
 
             <Card flex={1}>
-              <Stack as={'ul'}>
-                {isLoading ? (
-                  <Card as={'li'} padding={4}>
+              <Grid as={'ul'} columns={[1, 1, 1, 2]} gap={3} padding={3}>
+                {isLoading || isLoadingSecrets ? (
+                  <Card as={'li'} padding={4} column={[1, 2]}>
                     <Flex
                       direction="column"
                       align="center"
@@ -247,27 +314,35 @@ const VercelDeploy = () => {
                     >
                       <Spinner size={4} />
                       <Box padding={4}>
-                        <Text size={2}>loading your deployments...</Text>
+                        <Text size={2}>Loading Projects...</Text>
                       </Box>
                     </Flex>
                   </Card>
-                ) : deploys.length ? (
-                  deploys.map((deploy) => (
-                    <Card key={deploy._id} as={'li'} padding={4} borderBottom>
-                      <DeployItem
-                        key={deploy._id}
-                        name={deploy.name}
-                        url={deploy.url}
-                        _id={deploy._id}
-                        vercelProject={deploy.vercelProject}
-                        vercelTeam={deploy.vercelTeam}
-                        vercelToken={deploy.vercelToken}
-                        disableDeleteAction={deploy.disableDeleteAction}
-                      />
-                    </Card>
-                  ))
+                ) : deployments?.length ? (
+                  deployments.map((deployment) => {
+                    const isLocked = predefinedProjects?.some(
+                      (project) => project.url === deployment.url
+                    )
+
+                    return (
+                      <Card
+                        key={deployment._id}
+                        as={'li'}
+                        padding={4}
+                        radius={4}
+                        shadow={2}
+                        tone="default"
+                        muted
+                      >
+                        <DeployItem
+                          deployment={deployment}
+                          isLocked={isLocked}
+                        />
+                      </Card>
+                    )
+                  })
                 ) : (
-                  <Card as={'li'} padding={5} paddingTop={6}>
+                  <Card as={'li'} padding={5} paddingTop={6} column={[1, 2]}>
                     <Flex direction="column" align="center" justify="center">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -278,7 +353,7 @@ const VercelDeploy = () => {
                         <path
                           fill={scheme === 'dark' ? 'transparent' : 'white'}
                           fillRule="evenodd"
-                          stroke={scheme === 'dark' ? 'white' : 'black'}
+                          stroke="var(--card-border-color)"
                           strokeDasharray="4 4"
                           strokeWidth="2"
                           d="M107.36 2.48l105.7 185.47H2.66L108.35 2.48z"
@@ -292,7 +367,7 @@ const VercelDeploy = () => {
                           ry="74.52"
                         />
                         <path
-                          stroke={scheme === 'dark' ? 'white' : 'black'}
+                          stroke="var(--card-border-color)"
                           strokeWidth="2"
                           d="M256.5 156.48c0 40.88-33.05 74.02-73.82 74.02-40.77 0-73.83-33.14-73.83-74.02 0-40.87 33.06-74.01 73.83-74.01 40.77 0 73.82 33.14 73.82 74.01z"
                         />
@@ -324,25 +399,29 @@ const VercelDeploy = () => {
                       </svg>
 
                       <Flex direction="column" align="center" padding={4}>
-                        <Text size={3}>No deployments created yet.</Text>
+                        <Text size={3} weight="medium">
+                          No deployments created yet
+                        </Text>
                         <Box padding={4}>
                           <Button
-                            fontSize={3}
-                            paddingX={5}
-                            paddingY={4}
+                            fontSize={2}
+                            paddingX={4}
+                            paddingY={3}
                             tone="primary"
-                            radius={4}
+                            radius={3}
                             text="Add Project"
-                            onClick={() => setIsFormOpen(true)}
+                            onClick={() => setIsNewProjectOpen(true)}
                           />
                         </Box>
 
-                        <Text size={1} weight="semibold" muted>
+                        <Text size={1} weight="medium" muted>
                           <a
                             href="https://github.com/ndimatteo/sanity-plugin-vercel-deploy#-your-first-vercel-deployment"
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ color: 'inherit' }}
+                            style={{
+                              color: 'var(--card-muted-fg-color, inherit)',
+                            }}
                           >
                             Need help?
                           </a>
@@ -351,172 +430,127 @@ const VercelDeploy = () => {
                     </Flex>
                   </Card>
                 )}
-              </Stack>
+              </Grid>
             </Card>
           </Flex>
         </Container>
 
-        {isFormOpen && (
-          <Dialog
+        {isNewProjectOpen && (
+          <DeployDialogForm
             header="New Project Deployment"
-            id="create-webhook"
+            id="new-project"
+            values={pendingProject}
+            setValues={setPendingProject}
+            onClose={() => setIsNewProjectOpen(false)}
+            onSubmit={() => onSubmit(pendingProject)}
+            onSubmitText="Create"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          />
+        )}
+
+        {(isConfigOpen || missingAccessToken) && (
+          <Dialog
+            animate
+            id="vercel-access-token"
             width={1}
-            onClickOutside={() => setIsFormOpen(false)}
-            onClose={() => setIsFormOpen(false)}
             footer={
               <Box padding={3}>
-                <Grid columns={2} gap={3}>
+                <Grid columns={accessToken ? 2 : 1} gap={3}>
+                  {accessToken && (
+                    <Button
+                      padding={3}
+                      mode="ghost"
+                      text="Cancel"
+                      onClick={() => {
+                        setIsConfigOpen(false)
+                        setPendingAccessToken('')
+                      }}
+                    />
+                  )}
                   <Button
-                    padding={4}
-                    mode="ghost"
-                    text="Cancel"
-                    onClick={() => setIsFormOpen(false)}
-                  />
-                  <Button
-                    padding={4}
-                    text="Create"
-                    tone="primary"
+                    padding={3}
+                    text={accessToken ? 'Update' : 'Connect Projects'}
+                    tone="suggest"
+                    disabled={isSubmitting || !pendingAccessToken.trim()}
                     loading={isSubmitting}
-                    onClick={() => onSubmit()}
-                    disabled={
-                      isSubmitting ||
-                      !pendingDeploy.project ||
-                      !pendingDeploy.url ||
-                      !pendingDeploy.token
+                    onClick={() =>
+                      onAddToken(pendingAccessToken, accessToken ? true : false)
                     }
                   />
                 </Grid>
               </Box>
             }
           >
-            <Box padding={4}>
-              <Stack space={4}>
-                <FormField
-                  title="Display Title (internal use only)"
-                  description={
-                    <>
-                      This should be the environment you are deploying to, like{' '}
-                      <em>Production</em> or <em>Staging</em>
-                    </>
-                  }
-                >
-                  <TextInput
-                    type="text"
-                    value={pendingDeploy.title}
-                    onChange={(e) => {
-                      e.persist()
-                      const title = (e.target as HTMLInputElement).value
-                      setpendingDeploy((prevState) => ({
-                        ...prevState,
-                        ...{ title },
-                      }))
-                    }}
-                  />
-                </FormField>
-
-                <FormField
-                  title="Vercel Project Name"
-                  description={`Vercel Project: Settings → General → "Project Name"`}
-                >
-                  <TextInput
-                    type="text"
-                    value={pendingDeploy.project}
-                    onChange={(e) => {
-                      e.persist()
-                      const project = (e.target as HTMLInputElement).value
-                      setpendingDeploy((prevState) => ({
-                        ...prevState,
-                        ...{ project },
-                      }))
-                    }}
-                  />
-                </FormField>
-
-                <FormField
-                  title="Vercel Team Name"
-                  description={`Required for projects under a Vercel Team: Settings → General → "Team Name"`}
-                >
-                  <TextInput
-                    type="text"
-                    value={pendingDeploy.team}
-                    onChange={(e) => {
-                      e.persist()
-                      const team = (e.target as HTMLInputElement).value
-                      setpendingDeploy((prevState) => ({
-                        ...prevState,
-                        ...{ team },
-                      }))
-                    }}
-                  />
-                </FormField>
-
-                <FormField
-                  title="Deploy Hook URL"
-                  description={`Vercel Project: Settings → Git → "Deploy Hooks"`}
-                >
-                  <TextInput
-                    type="text"
-                    inputMode="url"
-                    value={pendingDeploy.url}
-                    onChange={(e) => {
-                      e.persist()
-                      const url = (e.target as HTMLInputElement).value
-                      setpendingDeploy((prevState) => ({
-                        ...prevState,
-                        ...{ url },
-                      }))
-                    }}
-                  />
-                </FormField>
-
-                <FormField
-                  title="Vercel Token"
-                  description={`Vercel Account dropdown: Settings → "Tokens"`}
-                >
-                  <TextInput
-                    type="text"
-                    value={pendingDeploy.token}
-                    onChange={(e) => {
-                      e.persist()
-                      const token = (e.target as HTMLInputElement).value
-                      setpendingDeploy((prevState) => ({
-                        ...prevState,
-                        ...{ token },
-                      }))
-                    }}
-                  />
-                </FormField>
-
-                <FormField>
-                  <Card paddingY={3}>
-                    <Flex align="center">
-                      <Switch
-                        id="disableDeleteAction"
-                        style={{ display: 'block' }}
-                        onChange={(e) => {
-                          e.persist()
-                          const isChecked = (e.target as HTMLInputElement)
-                            .checked
-
-                          setpendingDeploy((prevState) => ({
-                            ...prevState,
-                            ...{ disableDeleteAction: isChecked },
-                          }))
+            <Box padding={3}>
+              <form noValidate>
+                <Stack space={3}>
+                  <Card
+                    padding={4}
+                    radius={3}
+                    tone={accessToken ? 'caution' : 'suggest'}
+                  >
+                    <Flex gap={3} align="center">
+                      <Button
+                        as="div"
+                        mode="ghost"
+                        tone={accessToken ? 'caution' : 'suggest'}
+                        radius="full"
+                        icon={BoltIcon}
+                        style={{
+                          cursor: 'default !important',
                         }}
-                        checked={pendingDeploy.disableDeleteAction}
                       />
-                      <Box flex={1} paddingLeft={3}>
-                        <Text>
-                          <label htmlFor="disableDeleteAction">
-                            Disable the "Delete" action for this item in
-                            production?
-                          </label>
-                        </Text>
+                      <Box flex={1}>
+                        {accessToken ? (
+                          <Text>
+                            <strong>Vercel Access Token found</strong> <br />
+                            Value is hidden for security purposes.
+                          </Text>
+                        ) : (
+                          <Text>
+                            <strong>
+                              Preconfigured Projects were detected
+                            </strong>{' '}
+                            <br />A valid{' '}
+                            <a
+                              href="https://vercel.com/guides/how-do-i-use-a-vercel-api-access-token"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: 'var(--card-muted-fg-color, inherit)',
+                                textDecoration: 'underline',
+                                outline: 'none',
+                              }}
+                            >
+                              Vercel Access Token
+                            </a>{' '}
+                            is required to connect them.
+                          </Text>
+                        )}
                       </Box>
                     </Flex>
                   </Card>
-                </FormField>
-              </Stack>
+
+                  <FormField
+                    title={
+                      accessToken
+                        ? 'New Vercel Access Token'
+                        : 'Vercel Access Token'
+                    }
+                  >
+                    <TextInput
+                      ref={accessTokenFieldRef}
+                      type="text"
+                      value={pendingAccessToken}
+                      onChange={(e) => {
+                        const accessToken = (e.target as HTMLInputElement).value
+                        setPendingAccessToken(accessToken)
+                      }}
+                    />
+                  </FormField>
+                </Stack>
+              </form>
             </Box>
           </Dialog>
         )}

@@ -1,5 +1,5 @@
-import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
+import useSWR from 'swr'
 import spacetime from 'spacetime'
 
 import { TransferIcon } from '@sanity/icons'
@@ -7,8 +7,8 @@ import {
   Avatar,
   Box,
   Card,
+  Code,
   Flex,
-  Inline,
   Label,
   Spinner,
   Stack,
@@ -16,54 +16,50 @@ import {
   Tooltip,
 } from '@sanity/ui'
 
+import { authFetcher } from './utils'
+
 import DeployStatus from './deploy-status'
-import type { Deployments, SanityDeploySchema } from './types'
+
+import type { VercelDeployment, SanityVercelDeployment } from './types'
 
 interface DeployHistoryProps
-  extends Omit<SanityDeploySchema, '_id' | 'name' | 'disableDeleteAction'> {}
+  extends Omit<
+    SanityVercelDeployment,
+    '_id' | '_type' | 'name' | 'disableDeleteAction'
+  > {}
 const DeployHistory: React.FC<DeployHistoryProps> = ({
   url,
-  vercelProject,
-  vercelToken,
-  vercelTeam,
+  project,
+  team,
+  accessToken,
 }) => {
-  const [deployments, setDeployments] = useState<Deployments[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
+  const [loading, setIsLoading] = useState(false)
 
   const deployHookId = url?.split('/').pop()?.split('?').shift()
 
-  useEffect(() => {
-    if (!vercelProject) {
-      return
-    }
-    setLoading(true)
+  const {
+    data: { deployments } = { deployments: [] },
+    isLoading,
+    error,
+  } = useSWR(
+    [
+      `https://api.vercel.com/v6/deployments?projectId=${
+        project?.id
+      }&meta-deployHookId=${deployHookId}&limit=10${
+        team?.id ? `&teamId=${team?.id}` : ''
+      }`,
+      accessToken,
+    ],
+    ([url, token]) => authFetcher(url, token),
+    {
+      errorRetryCount: 3,
+      onError: (err) => {
+        console.log(err)
+      },
+    },
+  )
 
-    axios
-      .get(
-        `https://api.vercel.com/v5/now/deployments?projectId=${vercelProject}&meta-deployHookId=${deployHookId}&limit=6${
-          vercelTeam?.id ? `&teamId=${vercelTeam?.id}` : ''
-        }`,
-        {
-          headers: {
-            'content-type': 'application/json',
-            Authorization: `Bearer ${vercelToken}`,
-          },
-        }
-      )
-      .then(({ data }) => {
-        setDeployments(data.deployments)
-        setLoading(false)
-        setError(false)
-      })
-      .catch((e) => {
-        setLoading(false)
-        setError(true)
-        console.warn(e)
-      })
-  }, [url, vercelProject, vercelTeam?.id, vercelToken])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Flex direction="column" align="center" justify="center" paddingTop={3}>
         <Spinner size={4} />
@@ -78,26 +74,52 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
     return (
       <Card padding={4} radius={2} shadow={1} tone="critical">
         <Text size={2} align="center">
-          Could not load deployments for {vercelProject}
+          Could not load deployments for {project.id}
+        </Text>
+      </Card>
+    )
+  }
+
+  if (!deployments.length) {
+    return (
+      <Card padding={4} radius={2} shadow={1} tone="critical">
+        <Text size={2} align="center">
+          No deployments for {project.id}
         </Text>
       </Card>
     )
   }
 
   return (
-    <Box as={'ul'} padding={0}>
-      <Card as={'li'} padding={4} borderBottom>
+    <Box
+      as={'ul'}
+      padding={0}
+      style={{
+        maxHeight: '30rem',
+      }}
+    >
+      <Card
+        as={'li'}
+        padding={4}
+        borderBottom
+        style={{
+          position: 'sticky',
+          top: 0,
+          backgroundColor: 'var(--card-bg-color)',
+          zIndex: 1,
+        }}
+      >
         <Flex>
           <Box flex={3}>
             <Label muted>Preview URL</Label>
           </Box>
           <Box flex={1} marginLeft={2}>
-            <Label muted>State</Label>
+            <Label muted>Status</Label>
           </Box>
-          <Box flex={3} marginLeft={2} style={{ maxWidth: '40%' }}>
+          <Box flex={3} marginLeft={2} style={{ maxWidth: '50%' }}>
             <Label muted>Commit</Label>
           </Box>
-          <Box flex={2} marginLeft={2}>
+          <Box flex={1} marginLeft={2}>
             <Label align="right" muted>
               Deployed At
             </Label>
@@ -105,11 +127,11 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
         </Flex>
       </Card>
 
-      {deployments?.map((deployment) => (
+      {deployments?.map((deployment: VercelDeployment) => (
         <Card key={deployment.uid} as={'li'} padding={4} borderBottom>
           <Flex align="center">
             <Box flex={3}>
-              <Text weight="semibold">
+              <Text weight="medium">
                 <Box
                   style={{
                     whiteSpace: 'nowrap',
@@ -135,7 +157,7 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
             </Box>
             <Box flex={3} marginLeft={2} style={{ maxWidth: '40%' }}>
               <Stack space={2}>
-                <Text>
+                <Text size={1}>
                   <Box
                     style={{
                       whiteSpace: 'nowrap',
@@ -146,29 +168,37 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
                     {deployment.meta?.githubCommitMessage}
                   </Box>
                 </Text>
-                <Text size={2} muted>
-                  <Inline space={3}>
-                    <TransferIcon />
-                    {deployment.meta?.githubCommitRef}
-                  </Inline>
-                </Text>
+                <Flex gap={2} align="center">
+                  <TransferIcon width="1em" height="1em" />
+                  <Code size={1}>
+                    <Box
+                      style={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {deployment.meta?.githubCommitRef}
+                    </Box>
+                  </Code>
+                </Flex>
               </Stack>
             </Box>
-            <Flex flex={2} justify="flex-end" marginLeft={2}>
-              <Inline space={2}>
-                <Text style={{ whiteSpace: 'nowrap' }} muted>
+            <Flex flex={1} justify="flex-end" marginLeft={2}>
+              <Flex gap={2} align="center">
+                <Text size={1} style={{ whiteSpace: 'nowrap' }} muted>
                   {spacetime.now().since(spacetime(deployment.created)).rounded}
                 </Text>
                 <Tooltip
                   content={
-                    <Box padding={2}>
-                      <Text muted size={1}>
-                        {deployment.creator?.username}
-                      </Text>
-                    </Box>
+                    <Text muted size={1}>
+                      {deployment.creator?.username}
+                    </Text>
                   }
-                  fallbackPlacements={['right', 'left']}
+                  animate
+                  fallbackPlacements={['left']}
                   placement="top"
+                  portal
                 >
                   <Avatar
                     alt={deployment.creator?.username}
@@ -176,7 +206,7 @@ const DeployHistory: React.FC<DeployHistoryProps> = ({
                     size={1}
                   />
                 </Tooltip>
-              </Inline>
+              </Flex>
             </Flex>
           </Flex>
         </Card>
