@@ -1,3 +1,9 @@
+> 🇵🇸 **Statement of Solidarity** 🇵🇸<br /> I stand in unwavering support of the Palestinian people and their right to freedom, safety, and self-determination.
+
+> 🚫 I do not support Vercel or its leadership — whose public actions and statements have aligned with the oppression and genocide of Palestinians. **As a result, this plugin is no longer maintained and will not receive future updates or support.**
+
+> ✊ This plugin remains available for legacy use, but I encourage all users to explore alternative hosting platforms that better align with human rights and ethical responsibility.
+
 <h3 align="center">
   <img src="https://assets.vercel.com/image/upload/v1588805858/repositories/vercel/logo.png" height="40">
   <br />

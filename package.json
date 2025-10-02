@@ -1,6 +1,6 @@
 {
   "name": "sanity-plugin-vercel-deploy",
-  "version": "4.0.0-beta.1",
+  "version": "4.0.0",
   "type": "module",
   "description": "Trigger Vercel Deploy Hooks from your Sanity Studio",
   "keywords": [
