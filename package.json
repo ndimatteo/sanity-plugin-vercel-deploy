@@ -49,7 +49,7 @@
   "dependencies": {
     "@sanity/icons": "^3.7.0",
     "@sanity/incompatible-plugin": "^1.0.4",
-    "@sanity/ui": "^2.15.13",
+    "@sanity/ui": "^3.1.8",
     "@sanity/uuid": "^3.0.2",
     "axios": "^1.8.4",
     "prop-types": "^15.7.2",
@@ -73,7 +73,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-is": "^19.1.0",
-    "sanity": "^3.2.5",
+    "sanity": "^4.10.2",
     "styled-components": "^6.1.17",
     "typescript": "^5.8.3"
   },
