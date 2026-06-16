@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
 } from '@sanity/ui'
-import { FormField } from 'sanity'
+import FormField from './form-field'
 
 import type { PendingProject } from './types'
 
