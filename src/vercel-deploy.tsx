@@ -17,8 +17,9 @@ import {
 } from '@sanity/ui'
 import { buildTheme } from '@sanity/ui/theme'
 import { BoltIcon, CogIcon } from '@sanity/icons'
-import { FormField, useColorSchemeValue } from 'sanity'
+import { useColorSchemeValue } from 'sanity'
 
+import FormField from './form-field'
 import { useClient } from './hook/useClient'
 import { useClientSubscription } from './hook/useClientSubscription'
 
